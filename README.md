@@ -21,8 +21,8 @@ Grbl是性能高，成本低，基于并口运动控制，用于CNC雕刻。这�
 
 ***
 
-## Update Summary for v1.1
-- **IMPORTANT:** Your EEPROM will be wiped and restored with new settings. This is due to the addition of two new spindle speed '$' settings.
+## v1.1版本更新概要
+- **重要:** 你的EEPROM将会被擦除并恢复成新设置。 这是由于增加了两个新的主轴转速设置'$'。
 
 - **Real-time Overrides** : Alters the machine running state immediately with feed, rapid, spindle speed, spindle stop, and coolant toggle controls. This awesome new feature is common only on industrial machines, often used to optimize speeds and feeds while a job is running. Most hobby CNC's try to mimic this behavior, but usually have large amounts of lag. Grbl executes overrides in realtime and within tens of milliseconds.
 
