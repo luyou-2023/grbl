@@ -34,7 +34,7 @@ Grbl是性能高，成本低，基于并口运动控制，用于CNC雕刻。这�
 
 - **睡眠模式** : Grbl现在可以通过`$SLP`命令进入睡眠模式。这回禁用所有功能包括电机驱动器。当你离开你的机器但是又不想关闭电源时就特别有用。只有重启才会退出睡眠状态。
 
-- **Significant Interface Improvements**: Tweaked to increase overall performance, include lots more real-time data, and to simplify maintaining and writing GUIs. Based on direct feedback from multiple GUI developers and bench performance testing. _NOTE: GUIs need to specifically update their code to be compatible with v1.1 and later._
+- **重要接口改进**: 优化提高整体性能，包括更多的实时数据，并简化GUI的维护和编写。 基于来自多个GUI开发人员和平台性能测试的直接反馈。 _注意: GUIs 需要专门更新它们的代码以兼容v1.1和以后的版本。._
 
 	- **New Status Reports**: To account for the additional override data, status reports have been tweaked to cram more data into it, while still being smaller than before. Documentation is included, outlining how it has been changed. 
 	- **Improved Error/Alarm Feedback** : All Grbl error and alarm messages have been changed to providing a code. Each code is associated with a specific problem, so users will know exactly what is wrong without having to guess. Documentation and an easy to parse CSV is included in the repo.
