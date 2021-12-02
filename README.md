@@ -41,9 +41,9 @@ Grbl是性能高，成本低，基于并口运动控制，用于CNC雕刻。这�
 	- **扩展的-ASCII 实时命令** : 所有Override和未来的实时命令都在扩展ascii字符空间中定义。 不幸的是，不容易在键盘上键入，但有助于防止意外命令从g-code文件具有这些字符，并为未来的扩展提供了大量的空间。
 	- **消息前缀** : 来自Grbl的每一种消息类型都有一个惟一的前缀，以帮助gui立即确定消息是什么并相应地解析它，而无需了解上下文。以前的接口有几个gui实例，它们必须计算出消息的含义，这使得一切都比需要的更加复杂。
 
-- New OEM specific features, such as safety door parking, single configuration file build option, EEPROM restrictions and restoring controls, and storing product data information.
+- 新的OEM特定功能，例如安全门停车、单一配置文件构建选项、EEPROM限制和恢复控制以及存储产品数据信息。
  
-- New safety door parking motion as a compile-option. Grbl will retract, disable the spindle/coolant, and park near Z max. When resumed, it will perform these task in reverse order and continue the program. Highly configurable, even to add more than one parking motion. See config.h for details.
+- 新的安全门停车运动作为编译选项。 Grbl将缩回，禁用主轴/冷却剂，并停在zmax附近。当恢复时，它将以相反的顺序执行这些任务并继续程序。 详情查看 config.h。
 
 - New '$' Grbl settings for max and min spindle rpm. Allows for tweaking the PWM output to more closely match true spindle rpm. When max rpm is set to zero or less than min rpm, the PWM pin D11 will act like a simple enable on/off output.
 
