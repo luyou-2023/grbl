@@ -38,7 +38,7 @@ Grbl是性能高，成本低，基于并口运动控制，用于CNC雕刻。这�
 
 	- **新的状态报告**: 为了考虑到额外的覆盖数据，状态报告被调整为填充更多的数据，但仍然比以前更小。 文档包含了它大概是怎么改变的。
 	- **改进了错误/警报反馈** :所有的Grbl错误和警告信息已经被改成了错误代码形式,每个代码都与特定的问题相关联，因此用户无需猜测就能确切地知道哪里出了问题。在这个仓库的文档里有一个方便解析的CSV。
-	- **Extended-ASCII realtime commands** : All overrides and future real-time commands are defined in the extended-ASCII character space. Unfortunately not easily type-able on a keyboard, but helps prevent accidental commands from a g-code file having these characters and gives lots of space for future expansion.
+	- **扩展的-ASCII 实时命令** : 所有Override和未来的实时命令都在扩展ascii字符空间中定义。 不幸的是，不容易在键盘上键入，但有助于防止意外命令从g-code文件具有这些字符，并为未来的扩展提供了大量的空间。
 	- **Message Prefixes** : Every message type from Grbl has a unique prefix to help GUIs immediately determine what the message is and parse it accordingly without having to know context. The prior interface had several instances of GUIs having to figure out the meaning of a message, which made everything more complicated than it needed to be.
 
 - New OEM specific features, such as safety door parking, single configuration file build option, EEPROM restrictions and restoring controls, and storing product data information.
