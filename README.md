@@ -47,28 +47,28 @@ Grbl是性能高，成本低，基于并口运动控制，用于CNC雕刻。这�
 
 - 新的'$' Grbl设置最大和最小主轴转速。 允许调整PWM输出，以更接近真正的主轴转速。当最大转速设置为零或小于最小转速，PWM引脚D11将像一个简单的开启/关闭输出。
 
-- Updated G28 and G30 behavior from NIST to LinuxCNC g-code description. In short, if a intermediate motion is specified, only the axes specified will move to the stored coordinates, not all axes as before.
+- 更新G28和G30行为从NIST到LinuxCNC的g-code描述。简而言之，如果指定了中间运动，则只有指定的轴将移动到存储的坐标，而不是之前的所有轴。
 
-- Lots of minor bug fixes and refactoring to make the code more efficient and flexible.
+- 大量的小错误修复和重构使代码更加高效和灵活。
 
-- **NOTE:** Arduino Mega2560 support has been moved to an active, official Grbl-Mega [project](http://www.github.com/gnea/grbl-Mega/). All new developments here and there will be synced when it makes sense to.
+- **注意:** Arduino Mega2560支持已转移到一个活跃的官方Grbl-Mega[项目](http://www.github.com/gnea/grbl-Mega/)。这里和那里的所有新发展都将在合理的时候同步。
 
 
 ```
-List of Supported G-Codes in Grbl v1.1:
-  - Non-Modal Commands: G4, G10L2, G10L20, G28, G30, G28.1, G30.1, G53, G92, G92.1
-  - Motion Modes: G0, G1, G2, G3, G38.2, G38.3, G38.4, G38.5, G80
-  - Feed Rate Modes: G93, G94
-  - Unit Modes: G20, G21
-  - Distance Modes: G90, G91
-  - Arc IJK Distance Modes: G91.1
-  - Plane Select Modes: G17, G18, G19
-  - Tool Length Offset Modes: G43.1, G49
-  - Cutter Compensation Modes: G40
-  - Coordinate System Modes: G54, G55, G56, G57, G58, G59
-  - Control Modes: G61
-  - Program Flow: M0, M1, M2, M30*
-  - Coolant Control: M7*, M8, M9
-  - Spindle Control: M3, M4, M5
-  - Valid Non-Command Words: F, I, J, K, L, N, P, R, S, T, X, Y, Z
+Grbl v1.1中支持的g - code列表:
+  - 非模态命令: G4, G10L2, G10L20, G28, G30, G28.1, G30.1, G53, G92, G92.1
+  - 运动模式: G0, G1, G2, G3, G38.2, G38.3, G38.4, G38.5, G80
+  - 进给速率模式: G93, G94
+  - 单位模式: G20, G21
+  - 距离模式: G90, G91
+  - 圆弧 IJK 距离模式: G91.1
+  - 平面选择模式: G17, G18, G19
+  - 工具长度偏移模式: G43.1, G49
+  - 刀具补偿模式: G40
+  - 坐标系统模式: G54, G55, G56, G57, G58, G59
+  - 控制模式: G61
+  - 程序流: M0, M1, M2, M30*
+  - 冷却液控制: M7*, M8, M9
+  - 主轴控制: M3, M4, M5
+  - 合法的非命令单词: F, I, J, K, L, N, P, R, S, T, X, Y, Z
 ```
