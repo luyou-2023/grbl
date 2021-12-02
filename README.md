@@ -32,7 +32,7 @@ Grbl是性能高，成本低，基于并口运动控制，用于CNC雕刻。这�
 
 	- **按速度比例调整激光功率** : 如果你的机器有比较小的加速度，Grbl将自动根据行进多快自动调整激光功率，因此当你的CNC转弯时不会烧焦拐角!当激光模式开启时启用`M4`主轴逆时针转动命令开启这个特性！
 
-- **Sleep Mode** : Grbl may now be put to "sleep" via a `$SLP` command. This will disable everything, including the stepper drivers. Nice to have when you are leaving your machine unattended and want to power down everything automatically. Only a reset exits the sleep state.
+- **睡眠模式** : Grbl现在可以通过`$SLP`命令进入睡眠模式。这回禁用所有功能包括电机驱动器。当你离开你的机器但是又不想关闭电源时就特别有用。只有重启才会退出睡眠状态。
 
 - **Significant Interface Improvements**: Tweaked to increase overall performance, include lots more real-time data, and to simplify maintaining and writing GUIs. Based on direct feedback from multiple GUI developers and bench performance testing. _NOTE: GUIs need to specifically update their code to be compatible with v1.1 and later._
 
