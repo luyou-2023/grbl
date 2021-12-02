@@ -45,7 +45,7 @@ Grbl是性能高，成本低，基于并口运动控制，用于CNC雕刻。这�
  
 - 新的安全门停车运动作为编译选项。 Grbl将缩回，禁用主轴/冷却剂，并停在zmax附近。当恢复时，它将以相反的顺序执行这些任务并继续程序。 详情查看 config.h。
 
-- New '$' Grbl settings for max and min spindle rpm. Allows for tweaking the PWM output to more closely match true spindle rpm. When max rpm is set to zero or less than min rpm, the PWM pin D11 will act like a simple enable on/off output.
+- 新的'$' Grbl设置最大和最小主轴转速。 允许调整PWM输出，以更接近真正的主轴转速。当最大转速设置为零或小于最小转速，PWM引脚D11将像一个简单的开启/关闭输出。
 
 - Updated G28 and G30 behavior from NIST to LinuxCNC g-code description. In short, if a intermediate motion is specified, only the axes specified will move to the stored coordinates, not all axes as before.
 
