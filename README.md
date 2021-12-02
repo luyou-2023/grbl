@@ -30,7 +30,7 @@ Grbl是性能高，成本低，基于并口运动控制，用于CNC雕刻。这�
 
 - **激光模式** : 新的“激光”模式将使Grbl连续移动通过连续的G1、G2和G3命令和主轴转速变化。当“激光”模式禁用时，Grbl将转而停止，以确保主轴达到适当的速度。主轴速度overrides也与激光模式工作，所以你可以在工作期间调整激光功率。“激光”和“普通”模式可以通过`$`设置切换。
 
-	- **Dynamic Laser Power Scaling with Speed** : If your machine has low accelerations, Grbl will automagically scale the laser power based on how fast Grbl is traveling, so you won't have burnt corners when your CNC has to make a turn! Enabled by the `M4` spindle CCW command when laser mode is enabled!
+	- **按速度比例调整激光功率** : 如果你的机器有比较小的加速度，Grbl将自动根据行进多快自动调整激光功率，因此当你的CNC转弯时不会烧焦拐角!当激光模式开启时启用`M4`主轴逆时针转动命令开启这个特性！
 
 - **Sleep Mode** : Grbl may now be put to "sleep" via a `$SLP` command. This will disable everything, including the stepper drivers. Nice to have when you are leaving your machine unattended and want to power down everything automatically. Only a reset exits the sleep state.
 
