@@ -3,26 +3,20 @@
 ***
 _点击 `Release` 页签下载编译好的 `.hex` 文件 或 [点击这里](https://github.com/gnea/grbl/releases)_
 ***
-Grbl is a no-compromise, high performance, low cost alternative to parallel-port-based motion control for CNC milling. This version of Grbl runs on an Arduino with a 328p processor (Uno, Duemilanove, Nano, Micro, etc).
+Grbl是性能高，成本低，基于并口运动控制，用于CNC雕刻。这个Grbl版本运行在携带了328p处理其的Arduino上（例如Uno,Duimilanove,Nano,Micro等）。控制器由C编写并优化，利用了AVR 芯片的每一个灵巧特性来实现精确时序和异步控制。它可以保持超过30kHz的稳定、无偏差的控制脉冲。它接受标准的G代码而且通过了数个CAM工具的输出测试。弧形、圆形和螺旋的运动都可以像其他一些基本G代码命令一样完美支持。函数和变量并不支持，但是我们认为GUI可以更好的完成工作。 Grbl 包含完整的前瞻性加速度控制。它意味着控制器将提前16到20个运动来规划运行速度，以实现平稳的加速和无冲击的转弯。
 
-The controller is written in highly optimized C utilizing every clever feature of the AVR-chips to achieve precise timing and asynchronous operation. It is able to maintain up to 30kHz of stable, jitter free control pulses.
+* [许可证](https://github.com/gnea/grbl/wiki/Licensing): Grbl是自由软件, 在 GPLv3 许可证下发布。
 
-It accepts standards-compliant g-code and has been tested with the output of several CAM tools with no problems. Arcs, circles and helical motion are fully supported, as well as, all other primary g-code commands. Macro functions, variables, and most canned cycles are not supported, but we think GUIs can do a much better job at translating them into straight g-code anyhow.
+* 更多信息或帮助, 查看我们的WiKi **[WiKi页面!](https://github.com/MillerRen/grbl/wiki)** 如果上面的信息过时了, 请编辑它保持最新并和我们沟通! 谢谢!
 
-Grbl includes full acceleration management with look ahead. That means the controller will look up to 16 motions into the future and plan its velocities ahead to deliver smooth acceleration and jerk-free cornering.
+* 核心开发者: Sungeun "Sonny" Jeon, Ph.D. (USA) aka @chamnit
 
-* [Licensing](https://github.com/gnea/grbl/wiki/Licensing): Grbl is free software, released under the GPLv3 license.
-
-* For more information and help, check out our **[Wiki pages!](https://github.com/gnea/grbl/wiki)** If you find that the information is out-dated, please to help us keep it updated by editing it or notifying our community! Thanks!
-
-* Lead Developer: Sungeun "Sonny" Jeon, Ph.D. (USA) aka @chamnit
-
-* Built on the wonderful Grbl v0.6 (2011) firmware written by Simen Svale Skogsrud (Norway).
+* Simen Svale Skogsrud (挪威)编写并创建了神奇的 Grbl v0.6 (2011) 固件。
 
 ***
 
-### Official Supporters of the Grbl CNC Project
-![Official Supporters](https://github.com/gnea/gnea-Media/blob/master/Contributors.png?raw=true)
+### Grbl CNC 项目的官方支持者
+![官方支持者们](https://github.com/gnea/gnea-Media/blob/master/Contributors.png?raw=true)
 
 
 ***
