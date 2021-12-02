@@ -24,11 +24,11 @@ Grbl是性能高，成本低，基于并口运动控制，用于CNC雕刻。这�
 ## v1.1版本更新概要
 - **重要:** 你的EEPROM将会被擦除并恢复成新设置。 这是由于增加了两个新的主轴转速设置'$'。
 
-- **Real-time Overrides** : Alters the machine running state immediately with feed, rapid, spindle speed, spindle stop, and coolant toggle controls. This awesome new feature is common only on industrial machines, often used to optimize speeds and feeds while a job is running. Most hobby CNC's try to mimic this behavior, but usually have large amounts of lag. Grbl executes overrides in realtime and within tens of milliseconds.
+- **实时覆盖** : 通过进给、快速、主轴转速、主轴停止和冷却液切换控制，立即改变机器运行状态。这个令人激动的新功能通常只会出现在工业机器上，用来优化运行状态下优化速度和给料。大多数爱好CNC试图模仿这种行为，但通常有大量的滞后。 Grbl能在几十毫秒内执行实时覆盖。
 
-- **Jogging Mode** : The new jogging commands are independent of the g-code parser, so that the parser state doesn't get altered and cause a potential crash if not restored properly. Documentation is included on how this works and how it can be used to control your machine via a joystick or rotary dial with a low-latency, satisfying response.
+- **手动模式** : 新的手动命令独立于G代码解析器，因此如果没有正确恢复解析器状态，解析器状态不会发生改变，也不会导致潜在的崩溃。  文档包含了这是怎么工作的和它怎么能用控制杆和手轮控制你的机器 文档包含了这是如何工作的，它可以用来控制您的机器通过一个操纵杆或旋转拨号与低延迟，达到令人满意的响应。
 
-- **Laser Mode** : The new "laser" mode will cause Grbl to move continuously through consecutive G1, G2, and G3 commands with spindle speed changes. When "laser" mode is disabled, Grbl will instead come to a stop to ensure a spindle comes up to speed properly. Spindle speed overrides also work with laser mode so you can tweak the laser power, if you need to during the job. Switch between "laser" mode and "normal" mode via a `$` setting.
+- **激光模式** : 新的“激光”模式将使Grbl连续移动通过连续的G1、G2和G3命令和主轴转速变化。当“激光”模式禁用时，Grbl将转而停止，以确保主轴达到适当的速度。主轴速度overrides也与激光模式工作，所以你可以在工作期间调整激光功率。“激光”和“普通”模式可以通过`$`设置切换。
 
 	- **Dynamic Laser Power Scaling with Speed** : If your machine has low accelerations, Grbl will automagically scale the laser power based on how fast Grbl is traveling, so you won't have burnt corners when your CNC has to make a turn! Enabled by the `M4` spindle CCW command when laser mode is enabled!
 
