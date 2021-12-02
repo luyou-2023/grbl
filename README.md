@@ -36,7 +36,7 @@ Grbl是性能高，成本低，基于并口运动控制，用于CNC雕刻。这�
 
 - **重要接口改进**: 优化提高整体性能，包括更多的实时数据，并简化GUI的维护和编写。 基于来自多个GUI开发人员和平台性能测试的直接反馈。 _注意: GUIs 需要专门更新它们的代码以兼容v1.1和以后的版本。._
 
-	- **New Status Reports**: To account for the additional override data, status reports have been tweaked to cram more data into it, while still being smaller than before. Documentation is included, outlining how it has been changed. 
+	- **新的状态报告**: 为了考虑到额外的覆盖数据，状态报告被调整为填充更多的数据，但仍然比以前更小。 文档包含了它大概是怎么改变的。
 	- **Improved Error/Alarm Feedback** : All Grbl error and alarm messages have been changed to providing a code. Each code is associated with a specific problem, so users will know exactly what is wrong without having to guess. Documentation and an easy to parse CSV is included in the repo.
 	- **Extended-ASCII realtime commands** : All overrides and future real-time commands are defined in the extended-ASCII character space. Unfortunately not easily type-able on a keyboard, but helps prevent accidental commands from a g-code file having these characters and gives lots of space for future expansion.
 	- **Message Prefixes** : Every message type from Grbl has a unique prefix to help GUIs immediately determine what the message is and parse it accordingly without having to know context. The prior interface had several instances of GUIs having to figure out the meaning of a message, which made everything more complicated than it needed to be.
