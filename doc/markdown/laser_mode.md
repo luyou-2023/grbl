@@ -1,89 +1,89 @@
-## Grbl v1.1 Laser Mode
+## Grbl v1.1 激光模式
 
-**_DISCLAIMER: Lasers are extremely dangerous devices. They can instantly cause fires and permanently damage your vision. Please read and understand all related documentation for your laser prior to using it. The Grbl project is not resposible for any damage or issues the firmware may cause, as defined by its GPL license._**
+**_免责声明：激光是极其危险的设备。它们会立即引起火灾并永久损害您的视力。在使用之前，请阅读并理解您的激光器的所有相关文档。Grbl 项目不对固件可能导致的任何损坏或问题负责，如其 GPL 许可证所定义。_**
 
 ----
 
-Outlined in this document is how Grbl alters its running conditions for the new laser mode to provide both improved performance and attempting to enforce some basic user safety precautions.
+本文档概述了 Grbl 如何改变其新激光模式的运行条件，以提供改进的性能并尝试执行一些基本的用户安全预防措施。
 
-## Laser Mode Overview
+## 激光模式概述
 
-The main difference between default Grbl operation and the laser mode is how the spindle/laser output is controlled with motions involved. Every time a spindle state `M3 M4 M5` or spindle speed `Sxxx` is altered, Grbl would come to a stop, allow the spindle to change, and then continue. This is the normal operating procedure for a milling machine spindle. It needs time to change speeds. 
+默认 Grbl 操作与激光模式之间的主要区别在于主轴/激光输出如何通过所涉及的运动进行控制。每次主轴状态‘M3 M4 M5’或主轴速度‘Sxxx’改变时，Grbl都会停止，让主轴改变，然后继续。这是铣床主轴的正常操作程序。改变速度需要时间。
 
-However, if a laser starts and stops like this for every spindle change, this leads to scorching and uneven cutting/engraving! Grbl's new laser mode prevents unnecessary stops whenever possible and adds a new dynamic laser power mode that automagically scales power based on current speed related to programmed rate. So, you can get super clean and crisp results, even on a low-acceleration machine!
+但是，如果每次更换主轴时都像这样启动和停止激光，则会导致烧焦和切割/雕刻不均匀！Grbl 的新激光模式尽可能防止不必要的停止，并添加了新的动态激光功率模式，可根据与编程速率相关的当前速度自动调整功率。因此，即使在低加速度机器上，您也可以获得超级干净和清晰的结果！
 
-Enabling or disabling Grbl's laser mode is easy. Just alter the **$32** Grbl setting. 
-- **To Enable**: Send Grbl a `$32=1` command. 
-- **To Disable:** Send Grbl a `$32=0` command.
+启用或禁用 Grbl 的激光模式很容易。只需更改 **$32** Grbl 设置。
+- **启用**：向 Grbl 发送 `$32=1` 命令。 
+- **禁用：** 向 Grbl 发送 `$32=0` 命令。
 
-**WARNING:** If you switch back from laser mode to a spindle for milling, you **MUST** disable laser mode by sending Grbl a `$32=0` command. Milling operations require the spindle to get up to the right rpm to cut correctly and to be **safe**, helping to prevent a tool from breaking and flinging metal shards everywhere. With laser mode disabled, Grbl will briefly pause upon any spindle speed or state change to give the spindle a chance to get up to speed before continuing.
+**警告：** 如果您从激光模式切换回主轴进行铣削，您 **必须** 通过向 Grbl 发送 `$32=0` 命令来禁用激光模式。铣削操作要求主轴达到正确的转速以正确切割并确保**安全**，有助于防止刀具断裂和将金属碎片抛到各处。禁用激光模式后，Grbl 将在任何主轴速度或状态变化时短暂暂停，让主轴有机会在继续之前加速。
 
 
-## Laser Mode Operation
+## 激光模式操作
 
-When laser mode is enabled, Grbl controls laser power by varying the **0-5V** voltage from the spindle PWM D11 pin. **0V** should be treated as disabled, while **5V** is full power. Intermediate output voltages are also assumed to be linear with laser power, such that **2.5V** is approximate 50% laser power. (A compile time option exists to shift this linear model to start at a non-zero voltage.) 
+启用激光模式后，Grbl 通过改变主轴 PWM D11 引脚的 **0-5V** 电压来控制激光功率。**0V** 应视为禁用，而 **5V** 为全功率。中间输出电压也被假定为与激光功率成线性关系，因此 **2.5V** 是大约 50% 的激光功率。（存在一个编译时选项来移动这个线性模型以从非零电压开始。）
 
-By default, the spindle PWM frequency is **1kHz**, which is the recommended PWM frequency for most current Grbl-compatible lasers system. If a different frequency is required, this may be altered by editing the `cpu_map.h` file. 
+默认情况下，主轴 PWM 频率为 **1kHz**，这是当前大多数 Grbl 兼容激光器系统的推荐 PWM 频率。如果需要不同的频率，可以通过编辑 `cpu_map.h` 文件进行更改。
 
-The laser is enabled with the `M3` spindle CW and `M4` spindle CCW commands. These enable two different laser modes that are advantageous for different reasons each.
+使用“M3”主轴 CW 和“M4”主轴 CCW 命令启用激光。这些使两种不同的激光模式成为可能，这两种模式各有优势。
 	
-- **`M3` Constant Laser Power Mode:**
+- **`M3` 恒定激光功率模式：**
 
-    - Constant laser power mode simply keeps the laser power as programmed, regardless if the machine is moving, accelerating, or stopped. This provides better control of the laser state. With a good G-code program, this can lead to more consistent cuts in more difficult materials. 
+    - 恒定激光功率模式只是保持编程的激光功率，无论机器是移动、加速还是停止。这提供了对激光状态的更好控制。使用良好的 G 代码程序，这可以在更困难的材料中实现更一致的切割。
     
-    - For a clean cut and prevent scorching with `M3` constant power mode, it's a good idea to add lead-in and lead-out motions around the line you want to cut to give some space for the machine to accelerate and decelerate.
+    - 为了使用“M3”恒定功率模式进行干净的切割并防止烧焦，最好在要切割的线周围添加引入和引出运动，以便为机器提供一些空间来加速和减速。
 
-    - NOTE: `M3` can be used to keep the laser on for focusing.
+    - 注意：“M3”可用于保持激光开启以进行聚焦。
 
-- **`M4` Dynamic Laser Power Mode:**
-    - Dynamic laser power mode will automatically adjust laser power based on the current speed relative to the programmed rate. It essentially ensures the amount of laser energy along a cut is consistent even though the machine may be stopped or actively accelerating. This is very useful for clean, precise engraving and cutting on simple materials across a large range of G-code generation methods by CAM programs. It will generally run faster and may be all you need to use.
+- **`M4` 动态激光功率模式：**
+    - 动态激光功率模式将根据相对于编程速率的当前速度自动调整激光功率。即使机器可能停止或主动加速，它基本上也能确保沿切割的激光能量量是一致的。这对于通过 CAM 程序通过大量 G 代码生成方法在简单材料上进行干净、精确的雕刻和切割非常有用。它通常会运行得更快，并且可能是您需要使用的全部。
     
-    - Grbl calculates laser power based on the assumption that laser power is linear with speed and the material. Often, this is not the case. Lasers can cut differently at varying power levels and some materials may not cut well at a particular speed and/power. In short, this means that dynamic power mode may not work for all situations. Always do a test piece prior to using this with a new material or machine.
+    - Grbl 基于激光功率与速度和材料呈线性关系的假设来计算激光功率。通常，情况并非如此。激光可以在不同的功率水平下进行不同的切割，并且某些材料在特定的速度和/功率下可能无法很好地切割。简而言之，这意味着动态功耗模式可能不适用于所有情况。在将其与新材料或机器一起使用之前，请务必先进行测试。
 		
-    - When not in motion, `M4` dynamic mode turns off the laser. It only turns on when the machine moves. This generally makes the laser safer to operate, because, unlike `M3`, it will never burn a hole through your table, if you stop and forget to turn `M3` off in time.
+    - 不运动时，“M4”动态模式会关闭激光。它仅在机器移动时打开。这通常会使激光操作更安全，因为与“M3”不同，它永远不会在您的桌子上烧一个洞，如果您停下来忘记及时关闭“M3”。
 
-Describe below are the operational changes to Grbl when laser mode is enabled. Please read these carefully and understand them fully, because nothing is worse than a garage _**fire**_.
+下面描述的是启用激光模式时 Grbl 的操作变化。请仔细阅读并充分理解它们，因为没有什么比车库_**火灾**更糟糕的了。
 
-- Grbl will move continuously through **consecutive** motion commands when programmed with a new `S` spindle speed (laser power). The spindle PWM pin will be updated instantaneously through each motion without stopping.
-	- Example: The following set of g-code commands will not pause between each of them when laser mode is enabled, but will pause when disabled.
+- 当使用新的“S”主轴速度（激光功率）编程时，Grbl 将通过 **连续** 运动命令连续移动。主轴 PWM 引脚将通过每次运动即时更新而不会停止。
+	- 示例：以下一组 g 代码命令在启用激光模式时不会在每个命令之间暂停，但在禁用时会暂停。
 	
 		```
 		G1 X10 S100 F50
 		G1 X0 S90
 		G2 X0 I5 S80
 		``` 
-	- Grbl will enforce a laser mode motion stop in a few circumstances. Primarily to ensure alterations stay in sync with the g-code program.
+	- Grbl 将在某些情况下强制执行激光模式运动停止。主要是为了确保更改与 g 代码程序保持同步。
 
-		- Any `M3`, `M4`, `M5` spindle state _change_. 
-		- `M3` only and no motion programmed: A `S` spindle speed _change_.
-		- `M3` only and no motion programmed: A `G1 G2 G3` laser powered state _change_ to `G0 G80` laser disabled state.
-		- NOTE: `M4` does not stop for anything but a spindle state _change_.
+		- 任何`M3`、`M4`、`M5`主轴状态_change_。 
+		- 仅“M3”且未编程运动：“S”主轴速度_变化_。
+		- 仅“M3”且未编程运动：“G1 G2 G3”激光供电状态_更改_为“G0 G80”激光禁用状态。
+		- 注意：`M4` 不会因为主轴状态_变化_而停止。
 
-- The laser will only turn on when Grbl is in a `G1`, `G2`, or `G3` motion mode. 
+- 只有当 Grbl 处于“G1”、“G2”或“G3”运动模式时，激光才会打开。 
 
-	- In other words, a `G0` rapid motion mode or `G38.x` probe cycle will never turn on and always disable the laser, but will still update the running modal state. When changed to a `G1 G2 G3` modal state, Grbl will immediately enable the laser based on the current running state.
+	- 换句话说，“G0”快速运动模式或“G38.x”探测循环永远不会打开并始终禁用激光器，但仍会更新运行模态状态。当更改为“G1 G2 G3”模态状态时，Grbl 将根据当前运行状态立即启用激光器。
 	
-	- Please remember that `G0` is the default motion mode upon power up and reset. You will need to alter it to `G1`, `G2`, or `G3` if you want to manually turn on your laser. This is strictly a safety measure.
+	- 请记住，“G0”是开机和复位时的默认运动模式。如果您想手动打开激光，则需要将其更改为“G1”、“G2”或“G3”。这是严格的安全措施。
 	
-	- Example: `G0 M3 S1000` will not turn on the laser, but will set the laser modal state to `M3` enabled and power of `S1000`. A following `G1` command will then immediately be set to `M3` and `S1000`.
+	- 示例：`G0 M3 S1000` 不会打开激光器，而是将激光器模态状态设置为“M3”启用和“S1000”的功率。随后的“G1”命令将立即设置为“M3”和“S1000”。
 
-	- To have the laser powered during a jog motion, first enable a valid motion mode and spindle state. The following jog motions will inherit and maintain the previous laser state. Please use with caution though. This ability is primarily to allow turning on the laser on a _very low_ power to use the laser dot to jog and visibly locate the start position of a job.
+	- 要在点动运动期间为激光器供电，首先启用有效的运动模式和主轴状态。以下点动运动将继承并保持先前​​的激光状态。不过请谨慎使用。这种能力主要是允许以_非常低的_功率打开激光，以使用激光点点动并明显定位作业的开始位置。
 
 
-- An `S0` spindle speed of zero will turn off the laser. When programmed with a valid laser motion, Grbl will disable the laser instantaneously without stopping for the duration of that motion and future motions until set greater than zero..
+- “S0”主轴速度为零将关闭激光器。当使用有效的激光运动编程时，Grbl 将立即禁用激光，而不会在该运动和未来运动的持续时间内停止，直到设置大于零。
 
-	- `M3` constant laser mode, this is a great way to turn off the laser power while continuously moving between a `G1` laser motion and a `G0` rapid motion without having to stop. Program a short `G1 S0` motion right before the `G0` motion and a `G1 Sxxx` motion is commanded right after to go back to cutting.
+	- “M3”恒定激光模式，这是关闭激光功率的好方法，同时在“G1”激光运动和“G0”快速运动之间连续移动而无需停止。在“G0”运动之前编写一个简短的“G1 S0”运动，并在返回切割之后立即命令“G1 Sxxx”运动。
 
 
 -----
-###CAM Developer Implementation Notes
+###CAM 开发人员实施说明
 
-TODO: Add some suggestions on how to write laser G-code for Grbl. 
+TODO：添加一些关于如何为 Grbl 编写激光 G 代码的建议。 
 
-- When using `M3` constant laser power mode, try to avoid force-sync conditions during a job whenever possible. Basically every spindle speed change must be accompanied by a valid motion. Any motion is fine, since Grbl will automatically enable and disable the laser based on the modal state. Avoid a `G0` and `G1` command with no axis words in this mode and in the middle of a job.
+- 使用“M3”恒定激光功率模式时，尽可能避免在作业期间出现强制同步情况。基本上每次主轴速度变化都必须伴随有效的运动。任何运动都很好，因为 Grbl 会根据模态状态自动启用和禁用激光。避免在此模式下和作业中间使用没有轴字的“G0”和“G1”命令。
 
-- Ensure smooth motions throughout by turning the laser on and off without an `M3 M4 M5` spindle state command. There are two ways to do this:
+- 通过在没有“M3 M4 M5”主轴状态命令的情况下打开和关闭激光器，确保整个运动平稳。有两种方法可以做到这一点：
 
-    - _Program a zero spindle speed `S0`_: `S0` is valid G-code and turns off the spindle/laser without changing the spindle state. In laser mode, Grbl will smoothly move through consecutive motions and turn off the spindle. Conversely, you can turn on the laser with a spindle speed `S` greater than zero. Remember that `M3` constant power mode requires any spindle speed `S` change to be programmed with a motion to allow continuous motion, while `M4` dynamic power mode does not.
+    - _编程零主轴速度`S0`_：`S0`是有效的G代码，关闭主轴/激光而不改变主轴状态。在激光模式下，Grbl 将通过连续运动平稳移动并关闭主轴。相反，您可以以大于零的主轴速度“S”打开激光器。请记住，“M3”恒定功率模式需要将任何主轴速度“S”变化编程为允许连续运动，而“M4”动态功率模式则不需要。
 
-    - _Program an unpowered motion between powered motions_: If you are traversing between parts of a raster job that don't need to have the laser powered, program a `G0` rapid between them. `G0` enforces the laser to be disabled automatically. The last spindle speed programmed doesn't change, so if a valid powered motion, like a `G1` is executed after, it'll immediately re-power the laser with the last programmed spindle speed when executing that motion.
+    - _在动力运动之间编程无动力运动_：如果您正在光栅作业的不需要激光供电的部分之间移动，请在它们之间快速编程“G0”。`G0` 强制自动禁用激光。最后编程的主轴速度不会改变，因此如果之后执行了有效的动力运动，例如“G1”，则在执行该运动时，它将立即以最后编程的主轴速度重新为激光器供电。
