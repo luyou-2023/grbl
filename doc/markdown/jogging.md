@@ -1,93 +1,90 @@
-# Grbl v1.1 Jogging
+# Grbl v1.1 点动
 
-This document outlines how to use Grbl v1.1's new jogging commands. These command differ because they can be cancelled and all queued motions are automatically purged with a simple jog-cancel or feed hold real-time command. Jogging command do not alter the g-code parser state in any way, so you no longer have to worry if you remembered to set the distance mode back to `G90` prior to starting a job. Also, jogging works well with an analog joysticks and rotary dials! See the implementation notes below.
+本文档概述了如何使用 Grbl v1.1 的新点动命令。这些命令之所以不同，是因为它们可以被取消，并且所有排队的运动都可以通过简单的点动取消或进给保持实时命令自动清除。Jogging 命令不会以任何方式改变 g 代码解析器的状态，因此如果您记得在开始工作之前将距离模式设置回“G90”，您就不必再担心了。此外，点动与模拟操纵杆和旋转拨盘配合得很好！请参阅下面的实施说明。
 
-## How to Use
-Executing a jog requires a specific command structure, as described below:
+＃＃ 如何使用
+执行点动需要特定的命令结构，如下所述：
 
- - The first three characters must be '$J=' to indicate the jog.
- - The jog command follows immediate after the '=' and works like a normal G1 command.
- - Feed rate is only interpreted in G94 units per minute. A prior G93 state is ignored during jog.
- - Required words:
-   - XYZ: One or more axis words with target value.
-   - F - Feed rate value. NOTE: Each jog requires this value and is not treated as modal.
- - Optional words: Jog executes based on current G20/G21 and G90/G91 g-code parser state. If one of the following optional words is passed, that state is overridden for one command only.
-   - G20 or G21 - Inch and millimeter mode
-   - G90 or G91 - Absolute and incremental distances
-   - G53 - Move in machine coordinates
-   - N line numbers are valid. Will show in reports, if enabled, but is otherwise ignored.
- - All other g-codes, m-codes, and value words (including S and T) are not accepted in the jog command.
- - Spaces and comments are allowed in the command. These are removed by the pre-parser.
+ - 前三个字符必须是 '$J=' 以指示点动。
+ - 点动命令紧跟在“=”之后，就像普通的 G1 命令一样工作。
+ - 进给率仅以每分钟 G94 单位解释。在点动期间忽略先前的 G93 状态。
+ - 必填词：
+   - XYZ：一个或多个具有目标值的轴字。
+   - F - 进给率值。注意：每个点动都需要此值，并且不被视为模态。
+ - 可选词：点动根据当前 G20/G21 和 G90/G91 g 代码解析器状态执行。如果传递了以下可选词之一，则仅针对一个命令覆盖该状态。
+   - G20 或 G21 - 英寸和毫米模式
+   - G90 或 G91 - 绝对和增量距离
+   - G53 - 在机器坐标中移动
+   - N 行号有效。如果启用，将显示在报告中，否则将被忽略。
+ - 所有其他 g 代码、m 代码和值字（包括 S 和 T）在 jog 命令中不被接受。
+ - 命令中允许有空格和注释。这些由预解析器删除。
 
- - Example: G21 and G90 are active modal states prior to jogging. These are sequential commands.
-    - `$J=X10.0 Y-1.5` will move to X=10.0mm and Y=-1.5mm in work coordinate frame (WPos).
-    - `$J=G91 G20 X0.5` will move +0.5 inches (12.7mm) to X=22.7mm (WPos). Note that G91 and G20 are only applied to this jog command.
-    - `$J=G53 Y5.0` will move the machine to Y=5.0mm in the machine coordinate frame (MPos). If the work coordinate offset for the y-axis is 2.0mm, then Y is 3.0mm in (WPos).
+ - 示例：G21 和 G90 是点动前的有效模态状态。这些是顺序命令。
+    - `$J=X10.0 Y-1.5` 将在工作坐标系 (WPos) 中移动到 X=10.0mm 和 Y=-1.5mm。
+    - `$J=G91 G20 X0.5` 将移动 +0.5 英寸（12.7 毫米）到 X=22.7 毫米（WPos）。注意 G91 和 G20 只适用于该点动指令。
+    - `$J=G53 Y5.0` 将机器移动到机器坐标系 (MPos) 中的 Y=5.0mm。如果 y 轴的工件坐标偏移为 2.0 毫米，则 Y 为 3.0 毫米（WPos）。
 
-Jog commands behave almost identically to normal g-code streaming. Every jog command will
-return an 'ok' when the jogging motion has been parsed and is setup for execution. If a
-command is not valid, Grbl will return an 'error:'. Multiple jogging commands may be
-queued in sequence.
+点动命令的行为与普通的 g 代码流几乎相同。每个点动命令都会,当点动运动被解析并准备执行时返回“ok”。如果一个命令无效，Grbl 将返回“错误：”。多个点动命令可能是依次排队。
 
-The main differences are:  
+主要区别是：  
 
-- During a jog, Grbl will report a 'Jog' state while executing the jog.
-- A jog command will only be accepted when Grbl is in either the 'Idle' or 'Jog' states.
-- Jogging motions may not be mixed with g-code commands while executing, which will return a lockout error, if attempted.
-- All jogging motion(s) may be cancelled at anytime with a simple jog cancel realtime command or a feed hold or safety door event. Grbl will automatically flush Grbl's internal buffers of any queued jogging motions and return to the 'Idle' state. No soft-reset required.
-- If soft-limits are enabled, jog commands that exceed the machine travel simply does not execute the command and return an error, rather than throwing an alarm in normal operation.
-- IMPORTANT: Jogging does not alter the g-code parser state. Hence, no g-code modes need to be explicitly managed, unlike previous ways of implementing jogs with commands like 'G91G1X1F100'. Since G91, G1, and F feed rates are modal and if they are not changed back prior to resuming/starting a job, a job may not run how its was intended and result in a crash.
+- 在点动期间，Grbl 将在执行点动时报告“点动”状态。
+- 只有当 Grbl 处于“空闲”或“点动”状态时才会接受点动命令。
+- 执行时不能将点动运动与 g 代码命令混合，如果尝试，这将返回锁定错误。
+- 可以随时使用简单的点动取消实时命令或进给保持或安全门事件取消所有点动运动。Grbl 将自动刷新任何排队的点动运动的 Grbl 内部缓冲区并返回到“空闲”状态。无需软复位。
+- 如果启用软限位，超出机器行程的点动命令不会执行命令并返回错误，而不是在正常操作中发出警报。
+- 重要提示：点动不会改变 g 代码解析器状态。因此，不需要显式管理 g 代码模式，这与以前使用“G91G1X1F100”等命令实现点动的方式不同。由于 G91、G1 和 F 进给率是模态的，如果在恢复/开始工作之前没有将它们改回来，工作可能无法按预期运行并导致崩溃。
 
 ------
 
-## Joystick Implementation
+## 操纵杆实现
 
-Jogging in Grbl v1.1 is generally intended to address some prior issues with old bootstrapped jogging methods. Unfortunately, the new Grbl jogging is not a complete solution. Flash and memory restrictions prevent the original envisioned implementation, but most of these can be mimicked by the following suggested methodology. 
+Grbl v1.1 中的点动通常旨在解决旧的自举点动方法的一些先前问题。不幸的是，新的 Grbl 点动并不是一个完整的解决方案。闪存和内存限制阻止了最初设想的实现，但其中大部分都可以通过以下建议的方法来模拟。
 
-With a combination of the new jog cancel and moving in `G91` incremental mode, the following implementation can create low latency feel for an analog joystick or similar control device.
+结合新的点动取消和“G91”增量模式移动，以下实现可以为模拟操纵杆或类似的控制设备创造低延迟的感觉。
 
-- Basic Implementation Overview: 
-  - Create a loop to read the joystick signal and translate it to a desired jog motion vector.
-  - Send Grbl a very short `G91` incremental distance jog command with a feed rate based on the joystick throw.
-  - Wait for an 'ok' acknowledgement before restarting the loop.
-  - Continually read the joystick input and send Grbl short jog motions to keep Grbl's planner buffer full.
-  - If the joystick is returned to its neutral position, stop the jog loop and simply send Grbl a jog cancel real-time command. This will stop motion immediately somewhere along the programmed jog path with virtually zero-latency and automatically flush Grbl's planner queue. It's not advised to use a feed hold to cancel a jog, as it can lead to inadvertently suspending Grbl if its sent after returning to the IDLE state.
+- 基本实现概述： 
+  - 创建一个循环来读取操纵杆信号并将其转换为所需的点动运动矢量。
+  - 向 Grbl 发送一个非常短的 `G91` 增量距离点动命令，其进给率基于操纵杆投掷。
+  - 在重新启动循环之前等待“确定”确认。
+  - 不断读取操纵杆输入并发送 Grbl 短的点动动作，以保持 Grbl 的规划器缓冲区已满。
+  - 如果操纵杆返回到中立位置，停止点动循环并简单地向 Grbl 发送点动取消实时命令。这将在几乎零延迟的情况下沿着编程的点动路径立即停止运动，并自动刷新 Grbl 的计划器队列。不建议使用进给暂停来取消点动，因为如果在返回 IDLE 状态后发送 Grbl，它可能会导致无意中挂起 Grbl。
 
 
-The overall idea is to minimize the total distance in the planner queue to provide a low-latency feel to joystick control. The main trick is ensuring there is just enough distance in the planner queue, such that the programmed feed rate is always met. How to compute this will be explain later. In practice, most machines will have a 0.5-1.0 second latency. When combined with the immediate jog cancel command, joystick interaction can be quite enjoyable and satisfying.
+总体思路是最小化规划器队列中的总距离，为操纵杆控制提供低延迟的感觉。主要技巧是确保计划队列中有足够的距离，以便始终满足编程的进给率。稍后将解释如何计算它。在实践中，大多数机器会有 0.5-1.0 秒的延迟。当与立即点动取消命令结合使用时，操纵杆交互可以非常愉快和令人满意。
 
-However, please note, if a machine has a low acceleration and is being asked to move at a high programmed feed rate, joystick latency can get up to a handful of seconds. It may sound bad, but this is how long it'll take for a low acceleration machine, traveling at a high feed rate, to slow down to a stop. The argument can be made for a low acceleration machine that you really shouldn't be jogging at a high feed rate. It is difficult for a user to gauge where the machine will come to a stop. You risk overshooting your target destination, which can result in an expensive or dangerous crash. 
+但是，请注意，如果机器具有低加速度并且被要求以高编程进给速率移动，则操纵杆延迟可能会达到几秒钟。这听起来可能很糟糕，但这是低加速度机器以高进给率运行，减速到停止所需的时间。可以为低加速度机器提出论点，你真的不应该以高进给率点动。用户很难判断机器将在何处停止。您冒着超出目标目的地的风险，这可能导致代价高昂或危险的撞车事故。
 
-One of the advantages of this approach is that a GUI can deterministically track where Grbl will go by the jog commands it has already sent to Grbl. As long as a jog isn't cancelled, every jog command is guaranteed to execute. In the event a jog cancel is invoked, the GUI would just need to refresh their internal position from a status report after Grbl has cleared planner buffer and returned to the IDLE (or DOOR, if ajar) state from the JOG state. This stopped position will always be somewhere along the programmed jog path. If desired, jogging can then be quickly and easily restarted with a new tracked path.
+这种方法的优点之一是 GUI 可以通过它已经发送给 Grbl 的点动命令确定性地跟踪 Grbl 将去哪里。只要不取消点动，就保证每个点动命令都会执行。在调用点动取消的情况下，GUI 只需要在 Grbl 清除计划器缓冲区并从点动状态返回到空闲（或门，如果半开）状态后，从状态报告中刷新其内部位置。该停止位置将始终位于编程的点动路径上的某个位置。如果需要，可以使用新的跟踪路径快速轻松地重新开始点动。
 
-In combination with `G53` move in machine coordinates, a GUI can restrict jogging from moving into "keep-out" zones inside the machine space. This can be very useful for avoiding crashing into delicate probing hardware, workholding mechanisms, or other fixed features inside machine space that you want to avoid.
+结合机器坐标中的“G53”移动，GUI 可以限制点动进入机器空间内的“禁止”区域。这对于避免撞到精密的探测硬件、工件夹持机构或您想要避免的机器空间内的其他固定功能非常有用。
 
-#### How to compute incremental distances
+#### 如何计算增量距离
 
-The quickest and easiest way to determine what the length of a jog motion needs to be to minimize latency are defined by the following equations.
+确定最小化延迟所需的点动运动长度的最快和最简单的方法由以下等式定义。
 
-`s = v * dt` - Computes distance traveled for next jog command.
+`s = v * dt` - 计算下一个点动命令的行进距离。
 
-where:  
+在哪里：  
 
-- `s` - Incremental distance of jog command.
-- `dt` - Estimated execution time of a single jog command in seconds.  
-- `v` - Current jog feed rate in **mm/sec**, not mm/min. Less than or equal to max jog rate.
-- `N` - Number of Grbl planner blocks (`N=15`)
-- `T = dt * N` - Computes total estimated latency in seconds.
+- `s` - 点动命令的增量距离。
+- `dt` - 单个点动命令的估计执行时间（以秒为单位）。  
+- `v` - 当前点动进给速度以 **mm/sec** 为单位，而不是 mm/min。小于或等于最大点动速率。
+- `N` - Grbl 规划器块的数量（`N=15`）
+- `T = dt * N` - 以秒为单位计算总估计延迟。
  
-The time increment `dt` may be defined to whatever value you need. Obviously, you'd like the lowest value, since that translates to lower overall latency `T`. However, it is constrained by two factors.
+时间增量 `dt` 可以定义为您需要的任何值。显然，您需要最低的值，因为这会转化为更低的整体延迟“T”。但是，它受到两个因素的限制。
 
-- `dt > 10ms` - The time it takes Grbl to parse and plan one jog command and receive the next one. Depending on a lot of factors, this can be around 1 to 5 ms. To be conservative, `10ms` is used. Keep in mind that on some systems, this value may still be greater than `10ms` due to round-trip communication latency.
+- `dt > 10ms` - Grbl 解析和计划一个 jog 命令并接收下一个命令所花费的时间。取决于很多因素，这可能在 1 到 5 毫秒左右。为保守起见，使用“10ms”。请记住，在某些系统上，由于往返通信延迟，此值可能仍大于“10ms”。
 
-- `dt > v^2 / (2 * a * (N-1))` - The time increment needs to be large enough to ensure the jog feed rate will be acheived. Grbl always plans to a stop over the total distance queued in the planner buffer. This is primarily to ensure the machine will safely stop if a disconnection occurs. This equation simply ensures that `dt` is big enough to satisfy this constraint. 
+- `dt > v^2 / (2 * a * (N-1))` - 时间增量需要足够大以确保实现点动进给率。Grbl 总是计划在计划器缓冲区中排队的总距离上停留。这主要是为了确保机器在断开连接时能够安全停止。这个等式只是确保 `dt` 足够大来满足这个约束。
 
-	- For simplicity, use the max jog feed rate for `v` in mm/sec and the smallest acceleration setting between the jog axes being moved in mm/sec^2.
+	- 为简单起见，使用以 mm/sec 为单位的 `v` 的最大点动进给速率和以 mm/sec^2 为单位移动的点动轴之间的最小加速度设置。
 
-	- For a lower latency, `dt` can be computed for each jog motion, where `v` is the current rate and `a` is the max acceleration along the jog vector. This is very useful if traveling a very slow speeds to locate a part zero. The `v` rate would be much lower in this scenario and the total latency would decrease quadratically.
+	- 为了降低延迟，可以为每个点动运动计算 `dt`，其中 `v` 是当前速率，`a` 是沿着点动矢量的最大加速度。如果以非常慢的速度行驶以定位零零件，这将非常有用。在这种情况下，`v` 速率会低得多，总延迟会呈二次方下降。
 
-In practice, most CNC machines will operate with a jogging time increment of `0.025 sec` < `dt` < `0.06 sec`, which translates to about a `0.4` to `0.9` second total latency when traveling at the max jog rate. Good enough for most people. 
+在实践中，大多数 CNC 机器将以“0.025 秒”<“dt”<“0.06 秒”的点动时间增量运行，这相当于以最大点动速度行驶时大约“0.4”到“0.9”秒的总延迟. 对大多数人来说已经足够了。
 
-However, if jogging at a slower speed and a GUI adjusts the `dt` with it, you can get very close to the 0.1 second response time by human-interface guidelines for "feeling instantaneous". Not too shabby!
+但是，如果以较慢的速度点动并且 GUI 用它调整 `dt`，您可以通过人机界面指南获得非常接近 0.1 秒响应时间的“感觉瞬间”。不是太寒酸！
 
-With some ingenuity, this jogging methodology may be applied to different devices such as a rotary dial or touchscreen. An "inertial-feel", like swipe-scrolling on a smartphone or tablet, can be simulated by managing the jog rate decay and sending Grbl the associated jog commands. While this jogging implementation requires more initial work by a GUI, it is also inherently more flexible because you have complete deterministic control of how jogging behaves.
+凭借一些独创性，这种点动方法可以应用于不同的设备，例如旋转拨号或触摸屏。“惯性感觉”，如在智能手机或平板电脑上滑动滚动，可以通过管理慢速衰减并向 Grbl 发送相关的慢速命令来模拟。虽然这种点动实现需要 GUI 进行更多的初始工作，但它本质上也更加灵活，因为您可以完全确定地控制点动的行为方式。
