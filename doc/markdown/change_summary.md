@@ -1,114 +1,114 @@
-### _Grbl v1.1  - Change Summary_
+### _Grbl v1.1 - 更改摘要_
 
 --------
 
-### _Specific details are available in the other markdown documents._
+### _具体细节可在其他Markdown文档中找到。_
 --------
 
-#### GUI Interface Tweaks from Grbl v0.9
+#### Grbl v0.9 的 GUI 界面调整
 
-Grbl v1.1's interface protocol has been tweaked in the attempt to make GUI development cleaner, clearer, and hopefully easier. All messages are designed to be deterministic without needing to know the context of the message. Each can be inferred to a much greater degree than before just by the message type, which are all listed below.
+Grbl v1.1 的接口协议已经过调整，试图使 GUI 开发更干净、更清晰，并希望更容易。所有消息都被设计为确定性的，而无需知道消息的上下文。仅通过消息类型就可以比以前更大程度地推断每一个，这些都在下面列出。
 
-- `ok` / `error:x` : Normal send command and execution response acknowledgement. Used for streaming.
+- `ok` / `error:x` : 正常发送命令和执行响应确认。用于流。
 
-- `< >` : Enclosed chevrons contains status report data.
+- `< >` : 封闭的尖括号包含状态报告数据。
 
-- `Grbl X.Xx ['$' for help]` : Welcome message indicates initialization.
+- `Grbl X.Xx ['$' for help]`：欢迎消息表示初始化。
 
-- `ALARM:x` : Indicates an alarm has been thrown. Grbl is now in an alarm state.
+- `ALARM:x` ：表示已发出警报。Grbl 现在处于警报状态。
 
-- `$x=val` and `$Nx=line` indicate a settings printout from a `$` and `$N` user query, respectively.
+- `$x=val` 和 `$Nx=line` 分别表示来自 `$` 和 `$N` 用户查询的设置打印输出。
 
-- `[MSG:]` : Indicates a non-queried feedback message.
+- `[MSG:]` : 表示非查询反馈消息。
 
-- `[GC:]` : Indicates a queried `$G` g-code state message.
+- `[GC:]` : 表示被查询的 `$G` g 代码状态消息。
 
-- `[HLP:]` : Indicates the help message.
+- `[HLP:]` : 表示帮助信息。
 
-- `[G54:]`, `[G55:]`, `[G56:]`, `[G57:]`, `[G58:]`, `[G59:]`, `[G28:]`, `[G30:]`, `[G92:]`, `[TLO:]`, and `[PRB:]` messages indicate the parameter data printout from a `$#` user query.
+- `[G54:]`、`[G55:]`、`[G56:]`、`[G57:]`、`[G58:]`、`[G59:]`、`[G28:]`、 `[G30:]`、`[G92:]`、`[TLO:]` 和 `[PRB:]` 消息表示从 `$#` 用户查询中打印出的参数数据。
 
-- `[VER:]` : Indicates build info and string from a `$I` user query.
+- `[VER:]` ：表示来自 `$I` 用户查询的构建信息和字符串。
 
-- `[OPT:]` : Indicates compile-time option info from a `$I` user query.
+- `[OPT:]` ：表示来自`$I` 用户查询的编译时选项信息。
 
-- `[echo:]` : Indicates an automated line echo from a pre-parsed string prior to g-code parsing. Enabled by config.h option.
+- `[echo:]` ：表示在 g 代码解析之前来自预解析字符串的自动行回显。由 config.h 选项启用。
 
-- `>G54G20:ok` : The open chevron indicates startup line execution. The `:ok` suffix shows it executed correctly without adding an unmatched `ok` response on a new line.
+- `>G54G20:ok`：开放的尖括号表示启动行执行。`:ok` 后缀显示它正确执行，而没有在新行上添加不匹配的 `ok` 响应。
 
-In addition, all `$x=val` settings, `error:`, and `ALARM:` messages no longer contain human-readable strings, but rather codes that are defined in other documents. The `$` help message is also reduced to just showing the available commands. Doing this saves incredible amounts of flash space. Otherwise, the new overrides features would not have fit.
+此外，所有 `$x=val` 设置、`error:` 和 `ALARM:` 消息不再包含人类可读的字符串，而是包含在其他文档中定义的代码。`$` 帮助信息也减少为仅显示可用命令。这样做可以节省大量的闪存空间。否则，新的覆盖特征将放不下。
 
-Other minor changes and bug fixes that may effect GUI parsing include:
+其他可能影响 GUI 解析的小改动和错误修复包括：
 
-- Floating point values printed with zero precision do not show a decimal, or look like an integer. This includes spindle speed RPM and feed rate in mm mode.
-- `$G` reports fixed a long time bug with program modal state. It always showed `M0` program pause when running. Now during a normal program run, no program modal state is given until an `M0`, `M2`, or `M30` is active and then the appropriate state will be shown.
+- 以零精度打印的浮点值不显示小数，或看起来像整数。这包括毫米模式下的主轴转速 RPM 和进给率。
+- `$G` 报告修复了一个长期存在的程序模式状态错误。运行时一直显示‘M0’程序暂停。现在，在正常程序运行期间，在“M0”、“M2”或“M30”处于活动状态之前不会给出程序模态状态，然后将显示适当的状态。
 
-On a final note, these interface tweaks came about out of necessity, because more data is being sent back from Grbl, it is capable of doing many more things, and flash space is at a premium. It's not intended to be altered again in the near future, if at all. This is likely the only and last major change to this. If you have any comments or suggestions before Grbl v1.1 goes to master, please do immediately so we can all vet the new alteration before its installed.
+最后要注意的是，这些界面调整是出于需要，因为从 Grbl 发回了更多数据，它能够做更多事情，而且闪存空间非常宝贵。它不打算在不久的将来再次改变，如果有的话。这可能是唯一的也是最后一个重大变化。如果您在Grbl v1.1 正式版之前有任何意见或建议，请立即提出，以便我们在安装前审核新版本。
 
 ----
 
-#### Realtime Status Reports Changes from Grbl v0.9
+#### 实时状态报告 Grbl v0.9 的变化
 
-- Intent of changes is to make parsing cleaner, reduce transmitting overhead without effecting overall Grbl performance, and add more feedback data, which includes three new override values and real-time velocity.
+- 更改的目的是使解析更清晰，在不影响整体 Grbl 性能的情况下减少传输开销，并添加更多反馈数据，其中包括三个新的覆盖值和实时速度。
 
-- Data fields are separated by `|` pipe delimiters, rather than `,` commas that were used to separate data values. This should help with parsing.
+- 数据字段由`|` 管道分隔符分隔，而不是用于分隔数据值的`,` 逗号。这应该有助于解析。
 
-- The ability to mask and add/remove data fields from status reports via the `$10` status report mask setting has been disabled. Only selecting `MPos:` or `WPos:` coordinates is allowed.
-  - All available data is always sent to standardize the reports across all GUIs.
-  - For unique situations, data fields can be removed by config.h macros, but it is highly recommended to not alter these.
-
-
-- `MPos:` OR `WPos:` are always included in a report, but not BOTH at the same time.
-
-  - This reduces transmit overhead tremendously by removing upwards to 40 characters.
-  - `WCO:0.000,10.000,2.500` A current work coordinate offset is now sent to easily convert between position vectors, where `WPos = MPos - WCO` for each axis.
-    - `WCO:` is included immediately whenever a `WCO:` value changes or intermittently after every **X** status reports as a refresh. Refresh rates can dynamically vary from 10 to 30 (configurable) reports depending on what Grbl is doing.
-    - `WCO:` is simply the sum of the work coordinate system, G92, and G43.1 tool length offsets.
-    - Basically, a GUI just needs to retain the last `WCO:` and apply the equation to get the other position vector.
-    - `WCO:` messages may only be disabled via a config.h compile-option, if a GUI wants to handle the work position calculations on its own to free up more transmit bandwidth.
-  - Be aware of the following issue regarding `WPos:`.
-    - In Grbl v0.9 and prior, there is an old outstanding bug where the `WPos:` work position reported may not correlate to what is executing, because `WPos:` is based on the g-code parser state, which can be several motions behind. Grbl v1.1 now forces the planner buffer to empty, sync, and stops motion whenever there is a command that alters the work coordinate offsets `G10,G43.1,G92,G54-59`. This is the simplest way to ensure `WPos:` is always correct. Fortunately, it's exceedingly rare that any of these commands are used need continuous motions through them.
-    - A compile-time option is available to disable the planner sync and forced stop, but, if used, it's up to the GUI to handle this position correlation issue.
+- 已禁用通过“$10”状态报告掩码设置从状态报告中屏蔽和添加/删除数据字段的功能。只允许选择`MPos:` 或`WPos:` 坐标。
+  - 始终发送所有可用数据以标准化所有 GUI 的报告。
+  - 对于特殊情况，可以通过 config.h 宏删除数据字段，但强烈建议不要更改这些。
 
 
-- The `Hold` and `Door` states includes useful sub-state info via a `:` colon delimiter and an integer value. See descriptions for details.
+- `MPos:` 或 `WPos:` 始终包含在报告中，但不能同时包含两者。
 
-- Limit and other input pin reports have significantly changed to reduce transmit overhead.
-  - The data type description is now just `Pn:`, rather than `Lim:000` or `Pin:000|0|0000`
-  - It does not appear if no inputs are detected as triggered.
-  - If an input is triggered, ```Pn:``` will be followed by a letter or set of letters of every triggered input pin. `XYZPDHRS` for the XYZ-axes limits, Probe, Door, Hold, soft-Reset, cycle Start pins, respectively.
-  - For example, a triggered Z-limit and probe pin would report `Pn:ZP`.
-
-
-- Buffer data (planner and serial RX) reports have been tweaked and combined.
-
-  - `Bf:15,128`. The first value is the available blocks in the planner buffer and the second is available bytes in the serial RX buffer.
-  - Note that this is different than before, where it reported blocks/bytes "in-use", rather than "available". This change does not require a GUI to know how many blocks/bytes Grbl has been compiled with, which can be substantially different on a Grbl-Mega build.
+  - 通过删除多达 40 个字符，这极大地减少了传输开销。
+  - `WCO:0.000,10.000,2.500` 现在发送当前工作坐标偏移以在位置向量之间轻松转换，其中每个轴的 `WPos = MPos - WCO`。
+    - 每当 `WCO:` 值更改或在每次 **X** 状态报告为刷新后间歇性更改时，都会立即包含 `WCO:`。根据 Grbl 正在做什么，刷新率可以从 10 到 30（可配置）报告动态变化。
+    - `WCO:` 只是工件坐标系、G92 和 G43.1 刀具长度偏移的总和。
+    - 基本上，GUI 只需要保留最后一个`WCO:` 并应用方程来获得另一个位置向量。
+    - 如果 GUI 想要自行处理工作位置计算以释放更多传输带宽，则只能通过 config.h 编译选项禁用 `WCO:` 消息。
+  - 请注意以下有关“WPos:”的问题。
+    - 在 Grbl v0.9 及更早版本中，存在一个旧的突出错误，其中报告的“WPos:”工作位置可能与正在执行的内容无关，因为“WPos:”基于 g 代码解析器状态，可以是后面几个动作。Grbl v1.1 现在强制计划缓冲区清空、同步和停止运动，只要有改变工作坐标偏移的命令'G10,G43.1,G92,G54-59`。这是确保“WPos:”始终正确的最简单方法。幸运的是，使用这些命令中的任何一个都需要通过它们进行连续运动的情况极为罕见。
+    - 编译时选项可用于禁用计划器同步和强制停止，但如果使用，则由 GUI 来处理此位置关联问题。
 
 
-- Override reports are intermittent since they don't change often once set.
+- `Hold` 和 `Door` 状态通过 `:` 冒号分隔符和整数值包含有用的子状态信息。有关详细信息，请参阅说明。
 
-  - Overrides are included in every 10 or 20 status reports (configurable) depending on what Grbl is doing or, if an override value or toggle state changes, automatically in the next report.
-  - There are two override fields:
-    - `Ov:100,100,100` Organized as feed, rapid, and spindle speed overrides in percent.
+- 限制和其他输入引脚报告已显着更改以减少传输开销。
+  - 数据类型描述现在只是`Pn:`，而不是`Lim:000` 或`Pin:000|0|0000`
+  - 如果没有检测到输入被触发，则不会出现。
+  - 如果输入被触发，```Pn:``` 后面将跟有每个触发输入引脚的一个字母或一组字母。`XYZPDHRS` 分别用于 XYZ 轴限制、探测、门、保持、软复位、循环启动引脚。
+  - 例如，触发的 Z 限制和探针会报告“Pn:ZP”。
+
+
+- 缓冲区数据（规划器和串行 RX）报告已经过调整和组合。
+
+  - `Bf:15,128`。第一个值是规划器缓冲区中的可用块，第二个值是串行 RX 缓冲区中的可用字节。
+  - 请注意，这与以前不同，它报告“正在使用”的块/字节，而不是“可用”。此更改不需要 GUI 来知道 Grbl 编译了多少块/字节，这在 Grbl-Mega 构建中可能会有很大不同。
+
+
+- 覆盖报告是间歇性的，因为它们一旦设置就不会经常更改。
+
+  - 覆盖包含在每 10 或 20 个状态报告（可配置）中，具体取决于 Grbl 正在做什么，或者如果覆盖值或切换状态发生变化，则自动在下一个报告中。
+  - 有两个覆盖字段：
+    - `Ov:100,100,100` 组织为进给、快速和主轴速度覆盖百分比。
     
-- Accessory states are shown alongside override reports when they are active. Like pin states, an accessory state report `A:SFM` contains a letter indicating an active accessory. Letters `S`, `C`, `F`, and `M` are defined as spindle CW, spindle CCW, flood coolant, and mist coolant, respectively. The pins are directly polled and shown here.
+- 当附件处于活动状态时，它们会与覆盖报告一起显示。与引脚状态一样，附件状态报告`A:SFM` 包含一个指示活动附件的字母。字母“S”、“C”、“F”和“M”分别被定义为主轴顺时针、主轴逆时针、液流冷却液和雾状冷却液。引脚直接轮询并在此处显示。
 
-- Line numbers, when enabled in config.h, are omitted when:
+- 在 config.h 中启用时，行号在以下情况下被省略：
 
-  - No line number is passed to Grbl in a block.
-  - Grbl is performing a system motion like homing, jogging, or parking.
-  - Grbl is executing g-code block that does not contain a motion, like `G20G54` or `G4P1` dwell. (NOTE: Looking to fixing this later.)
+  - 没有行号在块中传递给 Grbl。
+  - Grbl 正在执行系统运动，如归位、慢跑或停车。
+  - Grbl 正在执行不包含运动的 g 代码块，如“G20G54”或“G4P1”停留。（注意：希望稍后修复此问题。）
 
 -------
 
-#### New Commands
+#### 新命令
 
-- `$SLP` - Grbl v1.1 now has a sleep mode that can be invoked by this command. It requires Grbl to be in either an IDLE or ALARM state. Once invoked, Grbl will de-energize all connected systems, including the spindle, coolant, and stepper drivers. It'll enter a suspend state that can only be exited by a reset. When reset, Grbl will re-initiatize in an ALARM state because the steppers were disabled and position can not be guaranteed.
-	-  NOTE: Grbl-Mega can invoke the sleep mode at any time, when the sleep timeout feature is enabled in config.h. It does so when Grbl has not received any external input after a timeout period.
+- `$SLP` - Grbl v1.1 现在有一个可以通过这个命令调用的睡眠模式。它要求 Grbl 处于空闲或警报状态。一旦调用，Grbl 将使所有连接的系统断电，包括主轴、冷却剂和步进驱动器。它将进入只能通过重置退出的挂起状态。复位时，Grbl 将重新初始化为 ALARM 状态，因为步进器被禁用且位置无法保证。
+	- 注意：当在 config.h 中启用睡眠超时功能时，Grbl-Mega 可以随时调用睡眠模式。当 Grbl 在超时时间后没有收到任何外部输入时，它会这样做。
 
-- 	`$J=line` New jogging commands. This command behaves much like a normal G1 command, but there are some key differences. Jog commands don't alter the g-code parser state, meaning a GUI doesn't have to manage it anymore. Jog commands may be queued and cancelled at any time, where they are automatically flushed from the planner buffer without requiring a reset. See the jogging documentation on how they work and how they may be used to implement a low-latency joystick or rotary dial.
+- `$J=line` 新的点动命令。这个命令的行为很像一个普通的 G1 命令，但有一些关键的区别。Jog 命令不会改变 g 代码解析器的状态，这意味着 GUI 不必再管理它。点动命令可以随时排队和取消，它们会自动从规划器缓冲区中清除，无需重置。请参阅点动文档，了解它们的工作原理以及如何使用它们来实现低延迟操纵杆或旋转拨号。
 
-- Laser mode `$` setting - When enabled, laser mode will move through consecutive G1, G2, and G3 motion commands that have different spindle speed values without stopping. A spindle speed of zero will disable the laser without stopping as well. However, when spindle states change, like M3 or M5, stops are still enforced.
-	- NOTE: Parking motions are automatically disabled when laser mode is enabled to prevent burning.
+- 激光模式`$` 设置 - 启用时，激光模式将通过具有不同主轴速度值的连续 G1、G2 和 G3 运动命令而不会停止。主轴速度为零将禁用激光器而不停止。但是，当主轴状态发生变化时，如 M3 或 M5，仍会强制停止。
+	- 注意：当启用激光模式以防止燃烧时，停车动作会自动禁用。
 	
-- `G56 P1` and `G56 P0` - When enabled in config.h with Grbl's parking motion, these commands enable and disable, respectively, the parking motion. Like all override control commands, these commands are modal and are part of the g-code stream.
+- `G56 P1` 和 `G56 P0` - 当在 config.h 中启用 Grbl 的停车动作时，这些命令分别启用和禁用停车动作。像所有覆盖控制命令一样，这些命令是模态的并且是 g 代码流的一部分。
