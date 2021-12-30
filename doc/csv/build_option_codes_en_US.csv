@@ -1,23 +1,23 @@
-OPT: Code, Build-Option Description,State
-V,Variable spindle,Enabled
-N,Line numbers,Enabled
-M,Mist coolant M7,Enabled
-C,CoreXY,Enabled
-P,Parking motion,Enabled
-Z,Homing force origin,Enabled
-H,Homing single axis commands,Enabled
-T,Two limit switches on axis,Enabled
-A,Allow feed rate overrides in probe cycles,Enabled
-D,Use spindle direction as enable pin,Enabled
-0,Spindle enable off when speed is zero,Enabled
-S,Software limit pin debouncing,Enabled
-R,Parking override control,Enabled
-+,Safety door input pin,Enabled
-*,Restore all EEPROM command,Disabled
-$,Restore EEPROM `$` settings command,Disabled
-#,Restore EEPROM parameter data command,Disabled
+OPT:代码、构建选项描述、状态
+V,可变主轴,启用
+N,行号,启用
+M,薄雾冷却剂 M7,启用
+C,CoreXY,启用
+P,停车动作,启用
+Z,归位力原点,启用
+H,Homing 单轴指令,启用
+T,轴上有两个限位开关,启用
+A、允许在探测循环中覆盖进给率,启用
+D、使用主轴方向作为使能引脚,使能
+0,速度为零时主轴使能关闭,使能
+S,Software limit pin debouncecing,Enabled
+R,停车超越控制,启用
++,安全门输入引脚,使能
+*,恢复所有EEPROM命令,禁用
+$,恢复 EEPROM `$` 设置命令,禁用
+#,恢复EEPROM参数数据命令,禁用
 I,Build info write user string command,Disabled
-E,Force sync upon EEPROM write,Disabled
-W,Force sync upon work coordinate offset change,Disabled
-L,Homing initialization auto-lock,Disabled
-2,Dual axis motors,Enabled
+E, EEPROM 写入时强制同步,禁用
+W,工件坐标偏移改变时强制同步,禁用
+L,归位初始化自动锁定,禁用
+2,双轴电机,启用
