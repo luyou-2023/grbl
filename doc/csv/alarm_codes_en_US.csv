@@ -1,11 +1,11 @@
-"Alarm Code in v1.1+"," Alarm Message in v1.0-"," Alarm Description"
-"1","Hard limit","Hard limit has been triggered. Machine position is likely lost due to sudden halt. Re-homing is highly recommended."
-"2","Soft limit","Soft limit alarm. G-code motion target exceeds machine travel. Machine position retained. Alarm may be safely unlocked."
-"3","Abort during cycle","Reset while in motion. Machine position is likely lost due to sudden halt. Re-homing is highly recommended."
-"4","Probe fail","Probe fail. Probe is not in the expected initial state before starting probe cycle when G38.2 and G38.3 is not triggered and G38.4 and G38.5 is triggered."
-"5","Probe fail","Probe fail. Probe did not contact the workpiece within the programmed travel for G38.2 and G38.4."
-"6","Homing fail","Homing fail. The active homing cycle was reset."
-"7","Homing fail","Homing fail. Safety door was opened during homing cycle."
-"8","Homing fail","Homing fail. Pull off travel failed to clear limit switch. Try increasing pull-off setting or check wiring."
-"9","Homing fail","Homing fail. Could not find limit switch within search distances. Try increasing max travel, decreasing pull-off distance, or check wiring."
-"10","Homing fail","Homing fail. Second dual axis limit switch failed to trigger within configured search distance after first. Try increasing trigger fail distance or check wiring."
+“告警代码在v1.1+”，“告警信息在v1.0-”，“告警描述”
+"1"，"硬限制"，"硬限制已触发。机器可能因突然停止而失去位置。强烈建议重新安置。”
+“2”、“软限位”、“软限位报警”。g码运动目标超过机器行程。机器的位置保留。警报器可以安全地打开。”
+“3”，“周期中中止”，“运动中复位”。机器可能因突然停止而失去位置。强烈建议重新安置。”
+“4”、“调查失败”、“调查失败。当G38.2和G38.3未被触发，而G38.4和G38.5被触发时，在开始探测周期之前，Probe没有处于预期的初始状态。”
+“5”、“调查失败”、“调查失败。探头在G38.2和G38.4的程序行程内没有接触工件。”
+“6”、“寻的失败”、“寻的失败。主动归航周期被重置。”
+“7”、“寻的失败”、“寻的失败。返航过程中安全门被打开。”
+“8”、“寻的失败”、“寻的失败。拉出行程未能清除限位开关。试着增加拉拔设置或检查接线。”
+“9”、“寻的失败”、“寻的失败。在搜索距离内找不到限制开关。试着增加最大行程，减少拉离距离，或者检查接线。”
+“10”、“寻的失败”、“寻的失败。第一个双轴限位开关在设定的搜索距离内没有触发第二个双轴限位开关。试着增加触发故障距离或检查接线。”
