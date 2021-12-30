@@ -1,123 +1,123 @@
-# Grbl Interface Basics
+# Grbl 接口基础
 
-The interface for Grbl is fairly simple and straightforward. With Grbl v1.1, steps have been taken to try to make it even easier for new users to get started, and for GUI developers to write their own custom interfaces to Grbl.
+Grbl 的接口相当简单明了。在 Grbl v1.1 中，已采取措施让新用户更容易上手，并让 GUI 开发人员为 Grbl 编写自己的自定义界面。
 
-Grbl communicates through the serial interface on the Arduino. You just need to connect your Arduino to your computer with a USB cable. Use any standard serial terminal program to connect to Grbl, such as: the Arduino IDE serial monitor, Coolterm, puTTY, etc. Or use one of the many great Grbl GUIs out there in the Internet wild.
+Grbl 通过 Arduino 上的串行接口进行通信。您只需要使用 USB 电缆将 Arduino 连接到计算机。使用任何标准串行终端程序连接到 Grbl，例如：Arduino IDE 串行监视器、Coolterm、puTTY 等。或者使用 Internet 上众多出色的 Grbl GUI 之一。
 
-The primary way to talk to Grbl is performed by sending it a string of characters, followed by a carriage return. Grbl will then process the string, set it up for execution, and then reply back with a **response message**, also terminated by a return, to tell you how it went. These command strings include sending Grbl: a G-code block to execute, commands to configure Grbl's system settings, to view how Grbl is doing, etc. 
+与 Grbl 对话的主要方式是向它发送一串字符，然后是回车。然后 Grbl 将处理字符串，设置它以供执行，然后以 **响应消息** 回复，也以返回终止，告诉您它是如何进行的。这些命令字符串包括发送 Grbl：要执行的 G 代码块、配置 Grbl 系统设置的命令、查看 Grbl 的运行情况等。
 
-To stream a g-code program to Grbl, the basic interface is to send Grbl a line of g-code, then wait for the proper **response message** starting with an `ok` or `error`. This signals Grbl has completed the parsing and executing the command. At times, Grbl may not respond immediately. This happens when Grbl is busy doing something else or waiting to place a commanded motion into the look-ahead planner buffer. Other times, usually at the start of a program, Grbl may quickly respond to several lines, but nothing happens. This occurs when Grbl places a series of commanded motions directly in the planner queue and will try to fill it up completely before starting.
+要将 g 代码程序流式传输到 Grbl，基本接口是向 Grbl 发送一行 g 代码，然后等待以“ok”或“错误”开头的正确**响应消息**。这表明 Grbl 已完成解析和执行命令。有时，Grbl 可能不会立即响应。当 Grbl 忙于做其他事情或等待将命令的运动放入前瞻规划器缓冲区时，就会发生这种情况。其他时候，通常在程序开始时，Grbl 可能会快速响应几行，但没有任何反应。当 Grbl 将一系列命令动作直接放置在计划器队列中并在开始之前尝试将其完全填满时，就会发生这种情况。
 
-Along with **response messages**, Grbl has **push messages** to provide more feedback on what Grbl is doing and are also strings terminated by a return. These messages may be "pushed" from Grbl to the user in response to a query or to let the user know something important just happened. These can come at any time, but usually from something like a settings print out when asked to. **Push messages** are easily identified because they don't start with an `ok` or `error` like **response messages** do. They are typically placed in `[]` brackets, `<>` chevrons, start with a `$`, or a specific string of text. These are all defined and described later in this document.
+除了**响应消息**，Grbl 还具有**推送消息** 以提供有关 Grbl 正在做什么的更多反馈，并且也是由返回终止的字符串。这些消息可能会从 Grbl “推送”给用户，以响应查询或让用户知道刚刚发生的重要事情。这些可以随时出现，但通常来自于需要时打印出来的设置。**推送消息**很容易识别，因为它们不像**响应消息**那样以“ok”或“error”开头。它们通常放在`[]` 方括号、`<>` V 字形、以`$` 或特定文本字符串开头。这些都在本文档后面进行了定义和描述。
 
-Finally, Grbl has **real-time commands** that are invoked by a set of special characters that may be sent at any time and are not part of the basic streaming send-response interface. These cause Grbl to immediately execute the command and typically don't generate a response. These include pausing the current motion, speed up/down everything, toggle the spindle during a job, reset Grbl, or query Grbl for a real-time status report. See the `Commands` document to see what they are and how they work.
+最后，Grbl 具有 **实时命令**，它们由一组可能随时发送的特殊字符调用，而不是基本流发送-响应接口的一部分。这些会导致 Grbl 立即执行命令并且通常不会生成响应。这些包括暂停当前运动、加速/减速一切、在作业期间切换主轴、重置 Grbl 或查询 Grbl 以获取实时状态报告。查看 `Commands` 文档以了解它们是什么以及它们是如何工作的。
 
 -------
 
-# Writing an Interface for Grbl
+# 为 Grbl 编写界面
 
-The general interface for Grbl has been described above, but what's missing is how to run an entire G-code program on Grbl, when it doesn't seem to have an upload feature. This is where this section fits in. Early on, users fiercely requested for flash drive, external RAM, LCD support, joysticks, or network support so they can upload a g-code program and run it directly on Grbl. The general answer to that is, good ideas, but Grbl doesn't need them. Grbl already has nearly all of the tools and features to reliably communicate with a graphical user interface (GUI) or a seperate host interface that provides all those extra bells and whistles. Grbl's base philosophy is to minimize what Grbl should be doing, because, in the end, Grbl needs to be concentrating on producing clean, reliable motion. That's it.
-
-
-## Streaming a G-Code Program to Grbl
-
-Here we will describe two different streaming methods for Grbl GUIs. One of the main problems with streaming to Grbl is the USB port itself. Arduinos and most all micro controllers use a USB-to-serial converter chip that, at times, behaves strangely and not typically how you'd expect, like USB packet buffering and delays that can wreak havoc to a streaming protocol. Another problem is how to deal with some of the latency and oddities of the PCs themselves, because none of them are truly real-time and always create micro-delays when executing other tasks. Regardless, we've come up with ways to ensure the G-code stream is reliable and simple. 
-
-The following streaming protocols require tracking the **response messages** to determine when to send the next g-code line. All **push messages** are not counted toward the streaming protocol and should be handled separately. All real-time command characters can be sent at any time and are never placed in Grbl's RX serial buffer. They are intercepted as they come in and simply sets  flags for Grbl to execute them.
-
-#### Streaming Protocol: Simple Send-Response _[Recommended]_
-The send-response streaming protocol is the most fool-proof and simplest method to stream a G-code program to Grbl. The host PC interface simply sends a line of G-code to Grbl and waits for an `ok` or `error:` **response message** before sending the next line of G-code. So, no matter if Grbl needs to wait for room in the look-ahead planner buffer to finish parsing and executing the last line of G-code or if the the host computer is busy doing something, this guarantees both to the host PC and Grbl, the programmed G-code has been sent and received properly. An example of this protocol is published in our `simple_stream.py` script in our repository.
-
-However, it's also the slowest of three outlined streaming protocols. Grbl essentially has two buffers between the execution of steps and the host PC interface. One of them is the serial receive buffer. This briefly stores up to 127 characters of data received from the host PC until Grbl has time to fetch and parse the line of G-code. The other buffer is the look-ahead planner buffer. This buffer stores up to 16 line motions that are acceleration-planned and optimized for step execution. Since the send-response protocol receives a line of G-code while the host PC waits for a response, Grbl's serial receive buffer is usually empty and under-utilized. If Grbl is actively running and executing steps, Grbl will immediately begin to execute and empty the look-ahead planner buffer, while it sends the response to the host PC, waits for the next line from the host PC, upon receiving it, parse and plan it, and add it to the end of the look-ahead buffer.
-
-Although this communication lag may take only a fraction of a second, there is a cumulative effect, because there is a lag with every G-code block sent to Grbl. In certain scenarios, like a G-code program containing lots of sequential, very short, line segments with high feed rates, the cumulative lag can be large enough to empty and starve the look-ahead planner buffer within this time. This could lead to start-stop motion when the streaming can't keep up with G-code program execution. Also, since Grbl can only plan and optimize what's in the look-ahead planner buffer, the performance through these types of motions will never be full-speed, because look-ahead buffer will always be partially full when using this streaming method. If your expected application doesn't contain a lot of these short line segments with high feed rates, this streaming protocol should be more than adequate for a vast majority of applications, is very robust, and is a quick way to get started.
-
-#### Streaming Protocol: Character-Counting _[**Recommended with Reservation**]_
-
-To get the best of both worlds, the simplicity and reliability of the send-response method and assurance of maximum performance with software flow control, we came up with a simple character-counting protocol for streaming a G-code program to Grbl. It works like the send-response method, where the host PC sends a line of G-code for Grbl to execute and waits for a `response message`, but, rather than needing special XON/XOFF characters for flow control, this protocol simply uses Grbl's responses as a way to reliably track how much room there is in Grbl's serial receive buffer. An example of this protocol is outlined in the `stream.py` streaming script in our repo. This protocol is particular useful for very fast machines like laser cutters. 
-
-The main difference between this protocol and the others is the host PC needs to maintain a standing count of how many characters it has sent to Grbl and then subtract the number of characters corresponding to the line executed with each Grbl response. Suppose there is a short G-code program that has 5 lines with 25, 40, 31, 58, and 20 characters (counting the line feed and carriage return characters too). We know Grbl has a 128 character serial receive buffer, and the host PC can send up to 128 characters without overflowing the buffer. If we let the host PC send as many complete lines as we can without over flowing Grbl's serial receive buffer, the first three lines of 25, 40, and 31 characters can be sent for a total of 96 characters. When Grbl sends a **response message**, we know the first line has been processed and is no longer in the serial read buffer. As it stands, the serial read buffer now has the 40 and 31 character lines in it for a total of 71 characters. The host PC needs to then determine if it's safe to send the next line without overflowing the buffer. With the next line at 58 characters and the serial buffer at 71 for a total of 129 characters, the host PC will need to wait until more room has cleared from the serial buffer. When the next Grbl **response message** comes in, the second line has been processed and only the third 31 character line remains in the serial buffer. At this point, it's safe to send the remaining last two 58 and 20 character lines of the g-code program for a total of 110.
-
-While seemingly complicated, this character-counting streaming protocol is extremely effective in practice. It always ensures Grbl's serial read buffer is filled, while never overflowing it. It maximizes Grbl's performance by keeping the look-ahead planner buffer full by better utilizing the bi-directional data flow of the serial port, and it's fairly simple to implement as our `stream.py` script illustrates. We have stress-tested this character-counting protocol to extremes and it has not yet failed. Seemingly, only the speed of the serial connection is the limit.
-
-_RESERVATION:_
-
-- _If a g-code line is parsed and generates an error **response message**, a GUI should stop the stream immediately. However, since the character-counting method stuffs Grbl's RX buffer, Grbl will continue reading from the RX buffer and parse and execute the commands inside it. A GUI won't be able to control this. The interim solution is to check all of the g-code via the $C check mode, so all errors are vetted prior to streaming. This will get resolved in later versions of Grbl._
+Grbl 的通用接口已在上面描述，但缺少的是如何在 Grbl 上运行整个 G 代码程序，当它似乎没有上传功能时。这就是本节适合的地方。早期，用户强烈要求闪存驱动器、外部 RAM、LCD 支持、操纵杆或网络支持，以便他们可以上传 g 代码程序并直接在 Grbl 上运行。对此的一般答案是，好主意，但 Grbl 不需要它们。Grbl 已经拥有几乎所有的工具和功能，可以与图形用户界面 (GUI) 或提供所有这些额外功能的独立主机界面进行可靠的通信。Grbl 的基本理念是尽量减少 Grbl 应该做的事情，因为最终，Grbl 需要专注于产生干净、可靠的运动。而已。
 
 
-## Interacting with Grbl's Systems
+## 将 G 代码程序流式传输到 Grbl
 
-Along with streaming a G-code program, there a few more things to consider when writing a GUI for Grbl, such as how to use status reporting, real-time control commands, dealing with EEPROM, and general message handling.
+在这里，我们将描述 Grbl GUI 的两种不同的流方法。流式传输到 Grbl 的主要问题之一是 USB 端口本身。Arduinos 和大多数所有微控制器都使用 USB 到串行转换器芯片，该芯片有时会表现得很奇怪，通常不会像您期望的那样，例如 USB 数据包缓冲和可能对流协议造成严重破坏的延迟。另一个问题是如何处理 PC 本身的一些延迟和奇怪之处，因为它们都不是真正实时的，并且在执行其他任务时总是会产生微延迟。无论如何，我们已经想出了确保 G 代码流可靠且简单的方法。
 
-#### Status Reporting
-When a `?` character is sent to Grbl (no additional line feed or carriage return character required), it will immediately respond with something like `<Idle|MPos:0.000,0.000,0.000|FS:0.0,0>` to report its state and current position. The `?` is always picked-off and removed from the serial receive buffer whenever Grbl detects one. So, these can be sent at any time. Also, to make it a little easier for GUIs to pick up on status reports, they are always encased by `<>` chevrons.
+以下流协议需要跟踪 **响应消息** 以确定何时发送下一个 g 代码行。所有**推送消息**不计入流协议，应单独处理。所有实时命令字符都可以随时发送，永远不会放在 Grbl 的 RX 串行缓冲区中。它们在进入时被拦截，并简单地为 Grbl 设置标志来执行它们。
 
-Developers can use this data to provide an on-screen position digital-read-out (DRO) for the user and/or to show the user a 3D position in a virtual workspace. We recommend querying Grbl for a `?` real-time status report at no more than 5Hz. 10Hz may be possible, but at some point, there are diminishing returns and you are taxing Grbl's CPU more by asking it to generate and send a lot of position data.
+#### 流协议：简单的发送-响应_[推荐]_
+发送-响应流协议是将 G 代码程序流式传输到 Grbl 的最简单、最简单的方法。主机 PC 接口简单地向 Grbl 发送一行 G 代码，并在发送下一行 G 代码之前等待“ok”或“错误：”**响应消息**。因此，无论 Grbl 是否需要在前瞻规划器缓冲区中等待空间来完成最后一行 G 代码的解析和执行，或者主机是否忙于做某事，这对主机 PC 和 Grbl 都有保证, 已正确发送和接收编程的 G 代码。该协议的一个示例发布在我们存储库中的“simple_stream.py”脚本中。
 
-Grbl's status report is fairly simply in organization. It always starts with a word describing the machine state like `IDLE` (descriptions of these are available elsewhere in the Wiki). The following data values are usually in the order listed below and separated by `|` pipe characters, but may not be in the exact order or printed at all. For a complete description of status report formatting, read the _Real-time Status Reports_ section below.
+然而，它也是三种概述的流媒体协议中最慢的。Grbl 本质上在步骤执行和主机 PC 接口之间有两个缓冲区。其中之一是串行接收缓冲区。这会简要存储从主机 PC 接收到的最多 127 个字符的数据，直到 Grbl 有时间获取和解析 G 代码行。另一个缓冲区是前瞻规划器缓冲区。该缓冲区最多可存储 16 条直线运动，这些直线运动经过加速规划和优化以用于步骤执行。由于发送-响应协议在主机 PC 等待响应时接收到一行 G 代码，因此 Grbl 的串行接收缓冲区通常是空的且未得到充分利用。如果 Grbl 正在主动运行和执行步骤，Grbl 将立即开始执行并清空前瞻规划器缓冲区，同时将响应发送到主机 PC，
 
-#### Real-Time Control Commands
-The real-time control commands, `~` cycle start/resume, `!` feed hold,  `^X` soft-reset, and all of the override commands, all immediately signal Grbl to change its running state. Just like `?` status reports, these control characters are picked-off and removed from the serial buffer when they are detected and do not require an additional line-feed or carriage-return character to operate.
+尽管这种通信延迟可能只需要几分之一秒，但存在累积效应，因为发送到 Grbl 的每个 G 代码块都会存在延迟。在某些情况下，例如包含大量连续的、非常短的、具有高进给率的线段的 G 代码程序，累积滞后可能大到足以在这段时间内清空和耗尽前瞻规划器缓冲区。当流无法跟上 G 代码程序的执行时，这可能会导致开始-停止运动。此外，由于 Grbl 只能计划和优化前瞻规划器缓冲区中的内容，因此这些类型的运动的性能永远不会是全速的，因为在使用此流式传输方法时，前瞻缓冲区将始终部分已满。如果您预期的应用程序不包含大量这些具有高进给率的短线段，
 
-One important note are the override command characters. These are defined in the extended-ASCII character space and are generally not type-able on a keyboard. A GUI must be able to send these 8-bit values to support overrides. 
+#### 流协议：字符计数_[**推荐预订**]_
 
-#### EEPROM Issues
-EEPROM access on the Arduino AVR CPUs turns off all of the interrupts while the CPU _writes_ to EEPROM. This poses a problem for certain features in Grbl, particularly if a user is streaming and running a g-code program, since it can pause the main step generator interrupt from executing on time. Most of the EEPROM access is restricted by Grbl when it's in certain states, but there are some things that developers need to know.
+为了充分利用发送-响应方法的简单性和可靠性以及通过软件流控制确保最大性能，我们提出了一个简单的字符计数协议，用于将 G 代码程序流式传输到 Grbl。它的工作原理类似于发送-响应方法，其中主机 PC 发送一行 G 代码供 Grbl 执行并等待“响应消息”，但是，该协议不需要特殊的 XON/XOFF 字符来进行流量控制，而是简单地使用 Grbl 的响应作为一种可靠跟踪 Grbl 串行接收缓冲区中有多少空间的方法。该协议的一个示例在我们的 repo 中的 `stream.py` 流脚本中进行了概述。该协议对于速度非常快的机器（如激光切割机）特别有用。
 
-* Settings should not be streamed with the character-counting streaming protocols. Only the simple send-response protocol works. This is because during the EEPROM write, the AVR CPU also shuts-down the serial RX interrupt, which means data can get corrupted or lost. This is safe with the send-response protocol, because it's not sending data after commanding Grbl to save data.
+该协议与其他协议之间的主要区别在于主机 PC 需要维护它已发送到 Grbl 的字符数的常设计数，然后减去与每个 Grbl 响应执行的行对应的字符数。假设有一个简短的 G 代码程序，它有 5 行，分别有 25、40、31、58 和 20 个字符（也包括换行和回车字符）。我们知道 Grbl 有一个 128 个字符的串行接收缓冲区，主机 PC 最多可以发送 128 个字符而不会溢出缓冲区。如果我们让主机 PC 发送尽可能多的完整行而不会溢出 Grbl 的串行接收缓冲区，那么前三行 25、40 和 31 个字符可以发送总共 96 个字符。当Grbl发送**响应消息**时，我们知道第一行已经被处理并且不再在串行读取缓冲区中。目前，串行读取缓冲区现在有 40 和 31 个字符的行，总共 71 个字符。然后主机 PC 需要确定在不溢出缓冲区的情况下发送下一行是否安全。下一行为 58 个字符，串行缓冲区为 71 个字符，总共 129 个字符，主机 PC 将需要等待，直到从串行缓冲区中清除更多空间。当下一个 Grbl **响应消息**进来时，第二行已经被处理，只有第三个 31 个字符的行保留在串行缓冲区中。此时，可以安全地发送 g-code 程序剩余的最后两行 58 和 20 字符行，总共 110 行。串行读取缓冲区现在有 40 和 31 个字符的行，总共 71 个字符。然后主机 PC 需要确定在不溢出缓冲区的情况下发送下一行是否安全。下一行为 58 个字符，串行缓冲区为 71 个字符，总共 129 个字符，主机 PC 将需要等待，直到从串行缓冲区中清除更多空间。当下一个 Grbl **响应消息**进来时，第二行已经被处理，只有第三个 31 个字符的行保留在串行缓冲区中。此时，可以安全地发送 g-code 程序剩余的最后两行 58 和 20 字符行，总共 110 行。串行读取缓冲区现在有 40 和 31 个字符的行，总共 71 个字符。然后主机 PC 需要确定在不溢出缓冲区的情况下发送下一行是否安全。下一行为 58 个字符，串行缓冲区为 71 个字符，总共 129 个字符，主机 PC 将需要等待，直到从串行缓冲区中清除更多空间。当下一个 Grbl **响应消息**进来时，第二行已经被处理，只有第三个 31 个字符的行保留在串行缓冲区中。此时，可以安全地发送 g-code 程序剩余的最后两行 58 和 20 字符行，总共 110 行。下一行为 58 个字符，串行缓冲区为 71 个字符，总共 129 个字符，主机 PC 将需要等待，直到从串行缓冲区中清除更多空间。当下一个 Grbl **响应消息**进来时，第二行已经被处理，只有第三个 31 个字符的行保留在串行缓冲区中。此时，可以安全地发送 g-code 程序剩余的最后两行 58 和 20 字符行，总共 110 行。下一行为 58 个字符，串行缓冲区为 71 个字符，总共 129 个字符，主机 PC 将需要等待，直到从串行缓冲区中清除更多空间。当下一个 Grbl **响应消息**进来时，第二行已经被处理，只有第三个 31 个字符的行保留在串行缓冲区中。此时，可以安全地发送 g-code 程序剩余的最后两行 58 和 20 字符行，总共 110 行。
 
-For reference:
-* Grbl's EEPROM write commands: `G10 L2`, `G10 L20`, `G28.1`, `G30.1`, `$x=`, `$I=`, `$Nx=`, `$RST=`
-* Grbl's EEPROM read commands: `G54-G59`, `G28`, `G30`, `$$`, `$I`, `$N`, `$#`
+虽然看起来很复杂，但这种字符计数流协议在实践中非常有效。它始终确保 Grbl 的串行读取缓冲区已被填满，而不会使其溢出。它通过更好地利用串行端口的双向数据流来保持前瞻规划器缓冲区已满，从而最大限度地提高了 Grbl 的性能，并且如我们的 `stream.py` 脚本所示，实现起来相当简单。我们已经对这个字符计数协议进行了极端的压力测试，它尚未失败。看起来，只有串行连接的速度才是极限。
 
-#### G-code Error Handling
+_遗留：_
 
-Grbl's g-code parser is fully standards-compilant with complete error-checking. When a G-code parser detects an error in a G-code block/line, the parser will dump everything in the block from memory and report an `error:` back to the user or GUI. This dump is absolutely the right thing to do, because a g-code line with an error can be interpreted in multiple ways. However, this dump can be problematic, because the bad G-code block may have contained some valuable positioning commands or feed rate settings that the following g-code depends on.
+- _如果 g 代码行被解析并生成错误 **响应消息**，GUI 应立即停止流。但是，由于字符计数方法填充了 Grbl 的 RX 缓冲区，Grbl 将继续从 RX 缓冲区读取并解析和执行其中的命令。GUI 将无法控制这一点。临时解决方案是通过 $C 检查模式检查所有 g 代码，以便在流式传输之前检查所有错误。这将在更高版本的 Grbl 中得到解决。_
 
-It's highly recommended to do what all professional CNC controllers do when they detect an error in the G-code program, _**halt**_. Don't do anything further until the user has modified the G-code and fixed the error in their program. Otherwise, bad things could happen.
 
-As a service to GUIs, Grbl has a "check G-code" mode, enabled by the `$C` system command. GUIs can stream a G-code program to Grbl, where it will parse it, error-check it, and report `ok`'s and `errors:`'s without powering on anything or moving. So GUIs can pre-check the programs before streaming them for real. To disable the "check G-code" mode, send another `$C` system command and Grbl will automatically soft-reset to flush and re-initialize the G-code parser and the rest of the system. This perhaps should be run in the background when a user first loads a program, before a user sets up his machine. This flushing and re-initialization clears `G92`'s by G-code standard, which some users still incorrectly use to set their part zero.
+## 与 Grbl 的系统交互
 
-#### Jogging
+除了流式传输 G 代码程序外，在为 Grbl 编写 GUI 时还需要考虑更多事项，例如如何使用状态报告、实时控制命令、处理 EEPROM 和一般消息处理。
 
-As of Grbl v1.1, a new jogging feature is available that accepts incremental, absolute, or absolute override motions, along with a jog cancel real-time command that will automatically feed hold and purge the planner buffer. The most important aspect of the new jogging motion is that it is completely independent from the g-code parser, so GUIs no longer have to ensure the g-code modal states are set back correctly after jogging is complete. See the jogging document for more details on how it works and how you can use it with an analog joystick or rotary dial.
+#### 状态报告
+当一个 `?` 字符被发送到 Grbl（不需要额外的换行符或回车符）时，它会立即响应类似 `<Idle|MPos:0.000,0.000,0.000|FS:0.0,0>` 的内容来报告它的状态和当前位置。每当 Grbl 检测到一个时，'?' 总是被拾取并从串行接收缓冲区中删除。所以，这些可以随时发送。此外，为了让 GUI 更容易获取状态报告，它们总是被 `<>` 人字形包围。
 
-#### Synchronization
+开发人员可以使用此数据为用户提供屏幕位置数字读数 (DRO) 和/或向用户显示虚拟工作区中的 3D 位置。我们建议以不超过 5Hz 的频率查询 Grbl 以获取“?”实时状态报告。10Hz 可能是可能的，但在某些时候，收益递减，并且您要求 Grbl 生成和发送大量位置数据，从而加重了 Grbl 的 CPU 负担。
 
-For situations when a GUI needs to run a special set of commands for tool changes, auto-leveling, etc, there often needs to be a way to know when Grbl has completed a task and the planner buffer is empty. The absolute simplest way to do this is to insert a `G4 P0.01` dwell command, where P is in seconds and must be greater than 0.0. This acts as a quick force-synchronization and ensures the planner buffer is completely empty before the GUI sends the next task to execute.
+Grbl 的状态报告在组织上相当简单。它总是以一个描述机器状态的词开头，比如“空闲”（这些描述可以在 Wiki 的其他地方找到）。以下数据值通常按下面列出的顺序排列，并以“|”竖线字符分隔，但可能不完全按顺序排列或根本不打印。有关状态报告格式的完整说明，请阅读下面的_实时状态报告_ 部分。
+
+#### 实时控制命令
+实时控制命令，`~` 循环开始/恢复，`!` 进给保持，`^X` 软复位，以及所有覆盖命令，都立即通知 Grbl 改变其运行状态。就像“?”状态报告一样，当检测到这些控制字符时，它们会从串行缓冲区中取出并删除，并且不需要额外的换行符或回车符来操作。
+
+一个重要的注意事项是覆盖命令字符。这些是在扩展 ASCII 字符空间中定义的，通常不能在键盘上键入。GUI 必须能够发送这些 8 位值以支持覆盖。
+
+#### EEPROM 问题
+Arduino AVR CPU 上的 EEPROM 访问会关闭所有中断，同时 CPU _写入_ 到 EEPROM。这给 Grbl 中的某些功能带来了问题，特别是如果用户正在流式传输和运行 g 代码程序，因为它可以暂停主步进生成器中断按时执行。大多数 EEPROM 访问在处于某些状态时受到 Grbl 的限制，但是开发人员需要了解一些事情。
+
+* 设置不应使用字符计数流协议进行流传输。只有简单的发送-响应协议有效。这是因为在 EEPROM 写入期间，AVR CPU 还会关闭串行 RX 中断，这意味着数据可能会损坏或丢失。这对发送-响应协议来说是安全的，因为它在命令 Grbl 保存数据后不发送数据。
+
+以供参考：
+* Grbl 的 EEPROM 写命令：`G10 L2`、`G10 L20`、`G28.1`、`G30.1`、`$x=`、`$I=`、`$Nx=`、`$RST= `
+* Grbl 的 EEPROM 读取命令：`G54-G59`、`G28`、`G30`、`$$`、`$I`、`$N`、`$#`
+
+#### G 代码错误处理
+
+Grbl 的 g 代码解析器完全符合标准，具有完整的错误检查功能。当 G 代码解析器检测到 G 代码块/行中的错误时，解析器将从内存中转储块中的所有内容并向用户或 GUI 报告“错误：”。此转储绝对是正确的做法，因为可以以多种方式解释带有错误的 g 代码行。但是，此转储可能会出现问题，因为错误的 G 代码块可能包含以下 G 代码所依赖的一些有价值的定位命令或进给率设置。
+
+强烈建议执行所有专业 CNC 控制器在 G 代码程序中检测到错误时所做的事情，_**停止**_。在用户修改 G 代码并修复他们程序中的错误之前，不要再做任何事情。否则，可能会发生不好的事情。
+
+作为 GUI 的一项服务，Grbl 有一个“检查 G 代码”模式，由 `$C` 系统命令启用。GUI 可以将 G 代码程序流式传输到 Grbl，在那里它会解析它，对其进行错误检查，并报告“ok”和“errors:”，而无需打开任何电源或移动。因此，GUI 可以在真正流式传输程序之前预先检查程序。要禁用“检查 G 代码”模式，请发送另一个 `$C` 系统命令，Grbl 将自动软重置以刷新和重新初始化 G 代码解析器和系统的其余部分。当用户第一次加载程序时，在用户设置他的机器之前，这可能应该在后台运行。这种刷新和重新初始化根据 G 代码标准清除了“G92”，一些用户仍然错误地使用它来将他们的部分设置为零。
+
+#### 点动
+
+从 Grbl v1.1 开始，一个新的点动功能可用，它接受增量、绝对或绝对覆盖运动，以及一个点动取消实时命令，该命令将自动进给保持和清除计划缓冲区。新的 jogging 运动最重要的方面是它完全独立于 g 代码解析器，因此 GUI 不再需要确保在 jogging 完成后正确设置 g 代码模态状态。有关其工作原理以及如何将其与模拟操纵杆或旋转拨盘配合使用的更多详细信息，请参阅慢跑文档。
+
+#### 同步
+
+对于 GUI 需要运行一组特殊命令以进行工具更改、自动调平等的情况，通常需要有一种方法来知道 Grbl 何时完成了任务并且规划器缓冲区为空。最简单的方法是插入“G4 P0.01”暂停命令，其中 P 以秒为单位，并且必须大于 0.0。这起到了快速强制同步的作用，并确保在 GUI 发送下一个要执行的任务之前计划缓冲区完全清空。
 
 -----
-# Message Summary
+# 消息摘要
 
-In v1.1, Grbl's interface protocol has been tweaked in the attempt to make GUI development cleaner, clearer, and hopefully easier. All messages are designed to be deterministic without needing to know the context of the message. Each can be inferred to a much greater degree than before just by the message type, which are all listed below.
+在 v1.1 中，Grbl 的接口协议已经过调整，试图使 GUI 开发更清晰、更清晰，并且希望更容易。所有消息都被设计为确定性的，而无需知道消息的上下文。仅通过消息类型就可以比以前更大程度地推断每一个，这些都在下面列出。
 
-- **Response Messages:** Normal send command and execution response acknowledgement. Used for streaming.
+- **响应消息：** 正常发送命令和执行响应确认。用于流。
 
-	- `ok` : Indicates the command line received was parsed and executed (or set to be executed).
-	- `error:x` : Indicated the command line received contained an error, with an error code `x`, and was purged. See error code section below for definitions.
+	- `ok` : 表示接收到的命令行被解析并执行（或设置为执行）。
+	- `error:x` ：表示收到的命令行包含错误，错误代码为 `x`，已被清除。有关定义，请参阅下面的错误代码部分。
 
-- **Push Messages:**
+- **推送消息：**
 	
-	- `< >` : Enclosed chevrons contains status report data.
-	- `Grbl X.Xx ['$' for help]` : Welcome message indicates initialization.
-	- `ALARM:x` : Indicates an alarm has been thrown. Grbl is now in an alarm state.	
-	- `$x=val` and `$Nx=line` indicate a settings printout from a `$` and `$N` user query, respectively.
-	- `[MSG:]` : Indicates a non-queried feedback message.
-	- `[GC:]` : Indicates a queried `$G` g-code state message.
-	- `[HLP:]` : Indicates the help message.
-	- `[G54:]`, `[G55:]`, `[G56:]`, `[G57:]`, `[G58:]`, `[G59:]`, `[G28:]`, `[G30:]`, `[G92:]`, `[TLO:]`, and `[PRB:]` messages indicate the parameter data printout from a `$#` user query.
-	- `[VER:]` : Indicates build info and string from a `$I` user query.
-	- `[echo:]` : Indicates an automated line echo from a pre-parsed string prior to g-code parsing. Enabled by config.h option.
-	- `>G54G20:ok` : The open chevron indicates startup line execution. The `:ok` suffix shows it executed correctly without adding an unmatched `ok` response on a new line.
+	- `< >` : 封闭的 V 形包含状态报告数据。
+	- `Grbl X.Xx ['$' for help]`：欢迎消息表示初始化。
+	- `ALARM:x` ：表示已发出警报。Grbl 现在处于警报状态。	
+	- `$x=val` 和 `$Nx=line` 分别表示来自 `$` 和 `$N` 用户查询的设置打印输出。
+	- `[MSG:]` : 表示非查询反馈消息。
+	- `[GC:]` : 表示被查询的 `$G` g 代码状态消息。
+	- `[HLP:]` : 表示帮助信息。
+	- `[G54:]`、`[G55:]`、`[G56:]`、`[G57:]`、`[G58:]`、`[G59:]`、`[G28:]`、 `[G30:]`、`[G92:]`、`[TLO:]` 和 `[PRB:]` 消息表示从 `$#` 用户查询中打印出的参数数据。
+	- `[VER:]` ：表示来自 `$I` 用户查询的构建信息和字符串。
+	- `[echo:]` ：表示在 g 代码解析之前来自预解析字符串的自动行回显。由 config.h 选项启用。
+	- `>G54G20:ok`：开放的 V 形表示启动行执行。`:ok` 后缀显示它正确执行，而没有在新行上添加不匹配的 `ok` 响应。
 
-In addition, all `$x=val` settings, `error:`, and `ALARM:` messages no longer contain human-readable strings, but rather codes that are defined in other documents. The `$` help message is also reduced to just showing the available commands. Doing this saves incredible amounts of flash space. Otherwise, the new overrides features would not have fit.
+此外，所有 `$x=val` 设置、`error:` 和 `ALARM:` 消息不再包含人类可读的字符串，而是包含在其他文档中定义的代码。`$` 帮助信息也减少为仅显示可用命令。这样做可以节省大量的闪存空间。否则，新的覆盖特征将不适合。
 
-Other minor changes and bug fixes that may effect GUI parsing include:
+其他可能影响 GUI 解析的小改动和错误修复包括：
 
-- Floating point values printed with zero precision do not show a decimal, or look like an integer. This includes spindle speed RPM and feed rate in mm mode.
-- `$G` reports fixed a long time bug with program modal state. It always showed `M0` program pause when running. Now during a normal program run, no program modal state is given until an `M0`, `M2`, or `M30` is active and then the appropriate state will be shown.
+- 以零精度打印的浮点值不显示小数，或看起来像整数。这包括毫米模式下的主轴转速 RPM 和进给率。
+- `$G` 报告修复了一个长期存在的程序模式状态错误。运行时一直显示‘M0’程序暂停。现在，在正常程序运行期间，在“M0”、“M2”或“M30”处于活动状态之前不会给出程序模态状态，然后将显示适当的状态。
 
-On a final note, this interface tweak came about out of necessity, as more data is being sent back from Grbl and it is capable of doing many more things. It's not intended to be altered again in the near future, if at all. This is likely the only and last major change to this. If you have any comments or suggestions before Grbl v1.1 goes to master, please do immediately so we can all vet the new alteration before its installed.
+最后一点，这个界面调整是出于必要，因为更多的数据从 Grbl 发回，它能够做更多的事情。它不打算在不久的将来再次改变，如果有的话。这可能是唯一的也是最后一个重大变化。如果您在Grbl v1.1 正式版之前有任何意见或建议，请立即提出，以便我们在安装前审核新版本。
 
 
 
@@ -125,122 +125,122 @@ On a final note, this interface tweak came about out of necessity, as more data 
 
 ---------
 
-# Grbl Response Messages
+# Grbl 响应消息
 
-Every G-code block sent to Grbl and Grbl `$` system command that is terminated with a return will be parsed and processed by Grbl. Grbl will then respond either if it recognized the command with an `ok` line or if there was a problem with an `error` line.
+发送到 Grbl 和 Grbl `$` 系统命令的每个 G 代码块都会被 Grbl 解析和处理。如果 Grbl 识别出带有“ok”行的命令，或者“错误”行出现问题，则 Grbl 将做出响应。
 
-* **`ok`**: All is good! Everything in the last line was understood by Grbl and was successfully processed and executed.
+* **`ok`**：一切都很好！最后一行的所有内容都被 Grbl 理解并成功处理和执行。
 
-  - If an empty line with only a return is sent to Grbl, it considers it a valid line and will return an `ok` too, except it didn't do anything.
+  - 如果一个只有返回值的空行被发送到 Grbl，它认为它是一个有效的行并且也会返回一个 `ok`，除非它没有做任何事情。
 
 
-* **`error:X`**: Something went wrong! Grbl did not recognize the command and did not execute anything inside that message. The `X` is given as a numeric error code to tell you exactly what happened. The table below decribes every one of them.
+* **`error:X`**：出了点问题！Grbl 无法识别该命令，也没有执行该消息中的任何内容。`X` 以数字错误代码的形式给出，以准确地告诉您发生了什么。下表描述了其中的每一个。
 
-	| ID | Error Code Description |
+	| ID | 错误代码说明 |
 |:-------------:|----|
-| **`1`** | G-code words consist of a letter and a value. Letter was not found. |
-| **`2`** | Numeric value format is not valid or missing an expected value. |
-| **`3`** | Grbl '$' system command was not recognized or supported. |
-| **`4`** | Negative value received for an expected positive value. |
-| **`5`** | Homing cycle is not enabled via settings. |
-| **`6`** | Minimum step pulse time must be greater than 3usec |
-| **`7`** | EEPROM read failed. Reset and restored to default values. |
-| **`8`** | Grbl '$' command cannot be used unless Grbl is IDLE. Ensures smooth operation during a job. |
-| **`9`** | G-code locked out during alarm or jog state |
-| **`10`** | Soft limits cannot be enabled without homing also enabled. |
-| **`11`** | Max characters per line exceeded. Line was not processed and executed. |
-| **`12`** | (Compile Option) Grbl '$' setting value exceeds the maximum step rate supported. |
-| **`13`** | Safety door detected as opened and door state initiated. |
-| **`14`** | (Grbl-Mega Only) Build info or startup line exceeded EEPROM line length limit. |
-| **`15`** | Jog target exceeds machine travel. Command ignored. |
-| **`16`** | Jog command with no '=' or contains prohibited g-code. |
-| **`17`** | Laser mode disabled. Requires PWM output. |
-| **`20`** | Unsupported or invalid g-code command found in block. |
-| **`21`** | More than one g-code command from same modal group found in block.|
-| **`22`** | Feed rate has not yet been set or is undefined. |
-| **`23`** | G-code command in block requires an integer value. |
-| **`24`** | Two G-code commands that both require the use of the `XYZ` axis words were detected in the block.|
-| **`25`** | A G-code word was repeated in the block.|
-| **`26`** | A G-code command implicitly or explicitly requires `XYZ` axis words in the block, but none were detected.|
-| **`27`**| `N` line number value is not within the valid range of `1` - `9,999,999`. |
-| **`28`** | A G-code command was sent, but is missing some required `P` or `L` value words in the line. |
-| **`29`** | Grbl supports six work coordinate systems `G54-G59`. `G59.1`, `G59.2`, and `G59.3` are not supported.|
-| **`30`**| The `G53` G-code command requires either a `G0` seek or `G1` feed motion mode to be active. A different motion was active.|
-| **`31`** | There are unused axis words in the block and `G80` motion mode cancel is active.|
-| **`32`** | A `G2` or `G3` arc was commanded but there are no `XYZ` axis words in the selected plane to trace the arc.|
-| **`33`** | The motion command has an invalid target. `G2`, `G3`, and `G38.2` generates this error, if the arc is impossible to generate or if the probe target is the current position.|
-| **`34`** | A `G2` or `G3` arc, traced with the radius definition, had a mathematical error when computing the arc geometry. Try either breaking up the arc into semi-circles or quadrants, or redefine them with the arc offset definition.|
-| **`35`** | A `G2` or `G3` arc, traced with the offset definition, is missing the `IJK` offset word in the selected plane to trace the arc.|
-| **`36`** | There are unused, leftover G-code words that aren't used by any command in the block.|
-| **`37`** | The `G43.1` dynamic tool length offset command cannot apply an offset to an axis other than its configured axis. The Grbl default axis is the Z-axis.|
-| **`38`** | Tool number greater than max supported value.|
+| **`1`** | G 代码字由一个字母和一个值组成。没有找到信。|
+| **`2`** | 数值格式无效或缺少预期值。|
+| **`3`** | 无法识别或支持 Grbl '$' 系统命令。|
+| **`4`** | 收到的预期正值的负值。|
+| **`5`** | 未通过设置启用归位循环。|
+| **`6`** | 最小步进脉冲时间必须大于3usec |
+| **`7`** | EEPROM 读取失败。重置并恢复为默认值。|
+| **`8`** | 除非 Grbl 处于空闲状态，否则不能使用 Grbl '$' 命令。确保作业期间的平稳运行。|
+| **`9`** | G 代码在报警或点动状态期间锁定 |
+| **`10`** | 如果未启用归位，则无法启用软限制。|
+| **`11`** | 超出每行最大字符数。行没有被处理和执行。|
+| **`12`** | (编译选项) Grbl '$' 设置值超过了支持的最大步进率。|
+| **`13`** | 检测到安全门打开并启动门状态。|
+| **`14`** | （仅限 Grbl-Mega）构建信息或启动线超出 EEPROM 线长度限制。|
+| **`15`** | 点动目标超过机器行程。命令被忽略。|
+| **`16`** | 不带“=”或包含禁止的 g 代码的点动命令。|
+| **`17`** | 激光模式已禁用。需要PWM输出。|
+| **`20`** | 在块中发现不受支持或无效的 g 代码命令。|
+| **`21`** | 在块中找到来自同一模态组的多个 g 代码命令。|
+| **`22`** | 进给率尚未设置或未定义。|
+| **`23`** | 块中的 G 代码命令需要一个整数值。|
+| **`24`** | 在块中检测到两个都需要使用“XYZ”轴字的 G 代码命令。|
+| **`25`** | 块中重复了 G 代码字。|
+| **`26`** | G 代码命令隐式或显式要求块中的“XYZ”轴字，但没有检测到。|
+| **`27`**| `N` 行号值不在 `1` - `9,999,999` 的有效范围内。|
+| **`28`** | 已发送 G 代码命令，但在该行中缺少一些必需的“P”或“L”值字。|
+| **`29`** | Grbl 支持六个工作坐标系`G54-G59`。不支持`G59.1`、`G59.2`和`G59.3`。|
+| **`30`**| “G53”G 代码命令需要激活“G0”搜索或“G1”进给运动模式。另一个动作处于活动状态。|
+| **`31`** | 程序段中有未使用的轴字，并且“G80”运动模式取消处于活动状态。|
+| **`32`** | 指令了`G2` 或`G3` 圆弧，但在所选平面中没有用于跟踪圆弧的`XYZ` 轴字。
+| **`33`** | 运动命令的目标无效。`G2`、`G3` 和`G38.2` 会产生此错误，如果无法生成圆弧或探测目标是当前位置。|
+| **`34`** | 使用半径定义追踪的“G2”或“G3”弧在计算弧几何时存在数学错误。尝试将圆弧分解为半圆或象限，或使用圆弧偏移定义重新定义它们。|
+| **`35`** | 使用偏移定义跟踪的`G2` 或`G3` 弧在跟踪该弧的选定平面中缺少`IJK` 偏移字。|
+| **`36`** | 有没有被块中的任何命令使用的未使用的、剩余的 G 代码字。
+| **`37`** | `G43.1` 动态刀具长度偏置指令不能对配置轴以外的轴应用偏置。Grbl 默认轴是 Z 轴。|
+| **`38`** | 刀具编号大于最大支持值。|
 
 
-----------------------
+---------------
 
-# Grbl Push Messages
+# Grbl 推送消息
 
-Along with the response message to indicate successfully executing a line command sent to Grbl, Grbl provides additional push messages for important feedback of its current state or if something went horribly wrong. These messages are "pushed" from Grbl and may appear at anytime. They are usually in response to a user query or some system event that Grbl needs to tell you about immediately. These push messages are organized into six general classes:
+除了指示成功执行发送给 Grbl 的行命令的响应消息外，Grbl 还提供了额外的推送消息，用于对其当前状态的重要反馈或出现严重错误的情况。这些消息是从 Grbl “推送”的，并且可能随时出现。它们通常是为了响应用户查询或 Grbl 需要立即告诉您的某些系统事件。这些推送消息分为六个通用类：
 
-- **_Welcome message_** - A unique message to indicate Grbl has initialized.
+- **_欢迎信息_** - 表示 Grbl 已初始化的唯一消息。
 
-- **_ALARM messages_** - Means an emergency mode has been enacted and shut down normal use.
+- **_ALARM 消息_** - 表示已启用紧急模式并关闭正常使用。
 
-- **_'$' settings messages_** - Contains the type and data value for a Grbl setting.
+- **_'$' 设置消息_** - 包含 Grbl 设置的类型和数据值。
 
-- **_Feedback messages_** - Contains general feedback and can provide useful data.
+- **_反馈消息_** - 包含一般反馈并可以提供有用的数据。
 
-- **_Startup line execution_** - Indicates a startup line as executed with the line itself and how it went.
+- **_启动脚本_** - 表示一条启动行与该行本身一起执行以及它是如何运行的。
 
-- **_Real-time status reports_** - Contains current run data like state, position, and speed.
+- **_实时状态报告_** - 包含当前运行数据，如状态、位置和速度。
 
 
 ------
 
-#### Welcome Message
+#### 欢迎信息
 
-**`Grbl X.Xx ['$' for help]`**
+**`Grbl X.Xx ['$' 寻求帮助]`**
 
-The start up message always prints upon startup and after a reset. Whenever you see this message, this also means that Grbl has completed re-initializing all its systems, so everything starts out the same every time you use Grbl.
+启动消息始终在启动时和重置后打印。每当您看到此消息时，这也意味着 Grbl 已完成对其所有系统的重新初始化，因此每次使用 Grbl 时一切都相同。
 
-* `X.Xx` indicates the major version number, followed by a minor version letter. The major version number indicates the general release, while the letter simply indicates a feature update or addition from the preceding minor version letter.
-* Bug fix revisions are tracked by the build info version number, printed when an `$I` command is sent. These revisions don't update the version number and are given by date revised in year, month, and day, like so `20161014`.
+* `X.Xx` 表示主要版本号，后跟一个次要版本字母。主要版本号表示一般版本，而字母仅表示从前面的次要版本字母开始的功能更新或添加。
+* 错误修复修订由构建信息版本号跟踪，在发送`$I` 命令时打印。这些修订版不会更新版本号，而是按年、月和日修订的日期给出，就像“20161014”一样。
 
 -----
 
-#### Alarm Message
+####报警信息
 
-Alarm is an emergency state. Something has gone terribly wrong when these occur. Typically, they are caused by limit error when the machine has moved or wants to move outside the machine travel and crash into the ends. They also report problems if Grbl is lost and can't guarantee positioning or a probe command has failed. Once in alarm-mode, Grbl will lock out all g-code functionality and accept only a small set of commands. It may even stop everything and force you to acknowledge the problem until you issue Grbl a reset. While in alarm-mode, the user can override the alarm manually with a specific command, which then re-enables g-code so you can move the machine again. This ensures the user knows about the problem and has taken steps to fix or account for it.
+报警是一种紧急状态。当这些发生时，事情已经发生了严重的错误。通常，当机器移动或想要移动到机器行程之外并撞到末端时，它们是由限制错误引起的。如果 Grbl 丢失并且无法保证定位或探测命令失败，他们也会报告问题。一旦进入警报模式，Grbl 将锁定所有 g 代码功能并仅接受一小组命令。它甚至可能会停止一切并迫使您承认问题，直到您向 Grbl 发出重置命令。在警报模式下，用户可以使用特定命令手动覆盖警报，然后重新启用 g 代码，以便您可以再次移动机器。这可确保用户了解问题并已采取措施修复或解决问题。
 
-Similar to error messages, all alarm messages are sent as  **`ALARM:X`**, where `X` is an alarm code to tell you exacly what caused the alarm. The table below describes the meaning of each alarm code.
+与错误消息类似，所有警报消息都以**`ALARM:X`** 的形式发送，其中`X` 是一个警报代码，用于告诉您究竟是什么引起了警报。下表描述了每个报警代码的含义。
 
-| ID | Alarm Code Description |
+| 身份证 | 报警代码说明 |
 |:-------------:|----|
-| **`1`** | Hard limit triggered. Machine position is likely lost due to sudden and immediate halt. Re-homing is highly recommended. |
-| **`2`** | G-code motion target exceeds machine travel. Machine position safely retained. Alarm may be unlocked. |
-| **`3`** | Reset while in motion. Grbl cannot guarantee position. Lost steps are likely. Re-homing is highly recommended. |
-| **`4`** | Probe fail. The probe is not in the expected initial state before starting probe cycle, where G38.2 and G38.3 is not triggered and G38.4 and G38.5 is triggered. |
-| **`5`** | Probe fail. Probe did not contact the workpiece within the programmed travel for G38.2 and G38.4. |
-| **`6`** | Homing fail. Reset during active homing cycle. |
-| **`7`** | Homing fail. Safety door was opened during active homing cycle. |
-| **`8`** | Homing fail. Cycle failed to clear limit switch when pulling off. Try increasing pull-off setting or check wiring. |
-| **`9`** | Homing fail. Could not find limit switch within search distance. Defined as `1.5 * max_travel` on search and `5 * pulloff` on locate phases. |
+| **`1`** | 硬限制触发。机器位置可能会因突然和立即停止而丢失。强烈建议重新归位。|
+| **`2`** | G 代码运动目标超过机器行程。机器位置安全保持。警报可能被解锁。|
+| **`3`** | 运动时复位。Grbl 不能保证位置。可能会丢失步骤。强烈建议重新归位。|
+| **`4`** | 探测失败。在开始探测循环之前，探测未处于预期的初始状态，其中 G38.2 和 G38.3 未触发，G38.4 和 G38.5 被触发。|
+| **`5`** | 探测失败。在 G38.2 和 G38.4 的编程行程内，测头没有接触到工件。|
+| **`6`** | 归位失败。在主动归位循环期间复位。|
+| **`7`** | 归位失败。安全门在主动归位循环期间打开。|
+| **`8`** | 归位失败。循环在拉断时清除限位开关失败。尝试增加拉断设置或检查接线。|
+| **`9`** | 归位失败。在搜索距离内找不到限位开关。在搜索阶段定义为 `1.5 * max_travel`，在定位阶段定义为 `5 * pulloff`。|
 
 -------
 
-#### Grbl `$` Settings Message
+#### Grbl `$` 设置消息
 
-When a push message starts with a `$`, this indicates Grbl is sending a setting and its configured value. There are only two types of settings messages: a single setting and value `$x=val` and a startup string setting `$Nx=line`. See [Configuring Grbl v1.x] document if you'd like to learn how to write these values for your machine.
+当推送消息以 `$` 开头时，这表明 Grbl 正在发送一个设置及其配置的值。只有两种类型的设置消息：单个设置和值 `$x=val` 和启动字符串设置 `$Nx=line`。如果您想了解如何为您的机器编写这些值，请参阅 [Configuring Grbl v1.x] 文档。
 
-- `$x=val` will only appear when the user queries to print all of Grbl's settings via the `$$` print settings command. It does so sequentially and completes with an `ok`.
+- 只有当用户通过 `$$` 打印设置命令查询打印 Grbl 的所有设置时，`$x=val` 才会出现。它按顺序执行并以“ok”结束。
 
-  - In prior versions of Grbl, the `$` settings included a short description of the setting immediately after the value. However, due to flash restrictions, most human-readable strings were removed to free up flash for the new override features in Grbl v1.1. In short, it was these strings or overrides, and overrides won. Keep in mind that once these values are set, they usually don't change, and GUIs will likely provide the assistance of translating these codes for users.
+  - 在 Grbl 的早期版本中，`$` 设置包括紧跟在值之后的设置的简短描述。然而，由于 Flash 限制，大多数人类可读的字符串被删除以释放 Flash 以用于 Grbl v1.1 中的新覆盖功能。简而言之，就是这些字符串或覆盖，并且覆盖获胜。请记住，一旦设置了这些值，它们通常不会更改，并且 GUI 可能会为用户提供翻译这些代码的帮助。
 
-  - _**NOTE for GUI developers:**_ _As with the error and alarm codes, settings codes are available in an easy to parse CSV file in the `/doc/csv` folder. These are continually updated._
+  - _** GUI 开发人员注意事项：**_ _与错误和警报代码一样，设置代码可在`/doc/csv` 文件夹中的一个易于解析的 CSV 文件中找到。这些是不断更新的。_
 
-  - The `$$` settings print out is shown below and the following describes each setting.
+  - `$$` 设置打印如下所示，下面描述每个设置。
 
-    ```
+    ``
 $0=10
 $1=25
 $2=0
@@ -266,130 +266,130 @@ $32=0
 $100=250.000
 $101=250.000
 $102=250.000
-$110=500.000
-$111=500.000
-$112=500.000
+$110 = 500.000
+$111 = 500.000
+$112 = 500.000
 $120=10.000
-$121=10.000
+$121 = 10.000
 $122=10.000
-$130=200.000
-$131=200.000
-$132=200.000
+$130 = 200.000
+$131 = 200.000
+$132 = 200.000
 ok
-```
+``
 
-	| `$x` Code | Setting Description, Units |
+	| `$x` 代码 | 设置说明，单位 |
 |:-------------:|----|
-| **`0`** | Step pulse time, microseconds |
-| **`1`** | Step idle delay, milliseconds |
-| **`2`** | Step pulse invert, mask |
-| **`3`** | Step direction invert, mask |
-| **`4`** | Invert step enable pin, boolean |
-| **`5`** | Invert limit pins, boolean |
-| **`6`** | Invert probe pin, boolean |
-| **`10`** | Status report options, mask |
-| **`11`** | Junction deviation, millimeters |
-| **`12`** | Arc tolerance, millimeters |
-| **`13`** | Report in inches, boolean |
-| **`20`** | Soft limits enable, boolean |
-| **`21`** | Hard limits enable, boolean |
-| **`22`** | Homing cycle enable, boolean |
-| **`23`** | Homing direction invert, mask |
-| **`24`** | Homing locate feed rate, mm/min |
-| **`25`** | Homing search seek rate, mm/min  |
-| **`26`** | Homing switch debounce delay, milliseconds |
-| **`27`** | Homing switch pull-off distance, millimeters |
-| **`30`** | Maximum spindle speed, RPM |
-| **`31`** | Minimum spindle speed, RPM |
-| **`32`** | Laser-mode enable, boolean |
-| **`100`** | X-axis steps per millimeter |
-| **`101`** | Y-axis steps per millimeter |
-| **`102`** | Z-axis steps per millimeter |
-| **`110`** | X-axis maximum rate, mm/min |
-| **`111`** | Y-axis maximum rate, mm/min |
-| **`112`** | Z-axis maximum rate, mm/min |
-| **`120`** | X-axis acceleration, mm/sec^2 |
-| **`121`** | Y-axis acceleration, mm/sec^2 |
-| **`122`** | Z-axis acceleration, mm/sec^2 |
-| **`130`** | X-axis maximum travel, millimeters |
-| **`131`** | Y-axis maximum travel, millimeters |
-| **`132`** | Z-axis maximum travel, millimeters |
+| **`0`** | 步进脉冲时间，微秒 |
+| **`1`** | 步骤空闲延迟，毫秒 |
+| **`2`** | 步进脉冲反相、屏蔽|
+| **`3`** | 步进方向反转，遮罩 |
+| **`4`** | 反转步进使能引脚，布尔值 |
+| **`5`** | 反转限制引脚，布尔值 |
+| **`6`** | 反转探针，布尔值 |
+| **`10`** | 状态报告选项，掩码 |
+| **`11`** | 连接偏差，毫米 |
+| **`12`** | 弧度公差，毫米 |
+| **`13`** | 以英寸为单位报告，布尔值 |
+| **`20`** | 软限制启用，布尔值 |
+| **`21`** | 硬限制启用，布尔值 |
+| **`22`** | 归位循环启用，布尔值 |
+| **`23`** | 归位方向反转，掩码 |
+| **`24`** | 归位定位进给速度，mm/min |
+| **`25`** | 归位搜索寻道率，mm/min |
+| **`26`** | 归位开关去抖动延迟，毫秒 |
+| **`27`** | 归位开关拉断距离，毫米 |
+| **`30`** | 最大主轴转速，RPM |
+| **`31`** | 最低主轴转速，RPM |
+| **`32`** | 激光模式启用，布尔值 |
+| **`100`** | X 轴每毫米步数 |
+| **`101`** | 每毫米 Y 轴步数 |
+| **`102`** | 每毫米 Z 轴步数 |
+| **`110`** | X 轴最大速率，mm/min |
+| **`111`** | Y轴最大速率，mm/min |
+| **`112`** | Z轴最大速率，mm/min |
+| **`120`** | X轴加速度，mm/sec^2 |
+| **`121`** | Y轴加速度，mm/sec^2 |
+| **`122`** | Z轴加速度，mm/sec^2 |
+| **`130`** | X 轴最大行程，毫米 |
+| **`131`** | Y 轴最大行程，毫米 |
+| **`132`** | Z 轴最大行程，毫米 |
 
 
-- The other `$Nx=line` message is the print-out of a user-defined startup line, where `x` denotes the startup line order and ranges from `0` to `1` by default. The `line` denotes the startup line to be executed by Grbl upon reset or power-up, except during an ALARM.
+- 另一个 `$Nx=line` 消息是用户定义的启动行的打印输出，其中 `x` 表示启动行顺序，默认范围从 `0` 到 `1`。`line` 表示 Grbl 在复位或上电时要执行的启动行，警报期间除外。
 
-  - When a user queries for the startup lines via a `$N` command, the following is sent by Grbl and completed by an `ok` response. The first line sets the initial startup work coordinate system to `G54`, while the second line is empty and does not execute.
-  ```
+  - 当用户通过 `$N` 命令查询启动行时，以下内容由 Grbl 发送并由 `ok` 响应完成。第一行设置初始启动工作坐标系为`G54`，第二行为空，不执行。
+  ``
   $N0=G54
   $N1=
-  ok
-  ```
+  行
+  ``
 
 
 ------
 
-#### Feedback Messages
+#### 反馈消息
 
-Feedback messages provide non-critical information on what Grbl is doing, what it needs, and/or provide some non-real-time data for the user when queried. Not too complicated. Feedback message are always enclosed in `[]` brackets, except for the startup line execution message which begins with an open chevron character `>`.
+反馈消息提供关于 Grbl 正在做什么、它需要什么的非关键信息，和/或在查询时为用户提供一些非实时数据。不是太复杂。反馈消息总是括在`[]` 括号中，除了以开放的人字形字符`>` 开头的启动行执行消息。
 
-- **Non-Queried Feedback Messages:** These feedback messages that may appear at any time and is not part of a query are listed and described below. They are usually sent as an additional helpful acknowledgement of some event or command executed. These always start with a `[MSG:` to denote their type.
+- **非查询反馈消息：** 这些可能随时出现且不属于查询的反馈消息在下面列出和描述。它们通常作为对执行的某些事件或命令的附加有用确认发送。这些总是以 `[MSG:` 开头来表示它们的类型。
 
-  - `[MSG:Reset to continue]` - Critical event message. Reset is required before Grbl accepts any other commands. This prevents ongoing command streaming and risking a motion before the alarm is acknowledged. Only hard or soft limit errors send this message immediately after the ALARM:x code.
+  - `[MSG:Reset to continue]` - 严重事件消息。在 Grbl 接受任何其他命令之前需要重置。这可以防止正在进行的命令流和在警报被确认之前冒着移动的风险。只有硬或软限制错误会在 ALARM:x 代码之后立即发送此消息。
 
-  - `[MSG:‘$H’|’$X’ to unlock]`- Alarm state is active at initialization. This message serves as a reminder note on how to cancel the alarm state. All g-code commands and some ‘$’ are blocked until the alarm state is cancelled via homing `$H` or unlocking `$X`. Only appears immediately after the `Grbl` welcome message when initialized with an alarm. Startup lines are not executed at initialization if this message is present and the alarm is active.
+  - `[MSG:'$H'|'$X' to unlock]`- 警报状态在初始化时处于活动状态。此消息用作有关如何取消警报状态的提醒说明。所有 g 代码命令和一些 '$' 都被阻止，直到通过归位 `$H` 或解锁 `$X` 取消警报状态。使用警报初始化时，仅在“Grbl”欢迎消息之后立即出现。如果此消息存在且警报处于活动状态，则不会在初始化时执行启动行。
 
-  - `[MSG:Caution: Unlocked]` - Appears as an alarm unlock `$X` acknowledgement. An 'ok' still appears immediately after to denote the `$X` was parsed and executed. This message reminds the user that Grbl is operating under an unlock state, where startup lines have still not be executed and should be cautious and mindful of what they do. Grbl may not have retained machine position due to an alarm suddenly halting the machine.  A reset or re-homing Grbl is highly recommended as soon as possible, where any startup lines will be properly executed.
+  - `[MSG:Caution: Unlocked]` - 显示为警报解锁 `$X` 确认。'ok' 仍然会在表示 `$X` 被解析和执行后立即出现。此消息提醒用户 Grbl 是在解锁状态下运行的，此时启动行仍未执行，应谨慎行事。由于突然停止机器的警报，Grbl 可能没有保留机器位置。强烈建议尽快重置或重新归位 Grbl，以便正确执行任何启动行。
 
-  - `[MSG:Enabled]` - Appears as a check-mode `$C` enabled acknowledgement. An 'ok' still appears immediately after to denote the `$C` was parsed and executed.
+  - `[MSG:Enabled]` - 显示为检查模式 `$C` 启用的确认。'ok' 仍然会在表示 `$C` 被解析和执行后立即出现。
 
-  - `[MSG:Disabled]` - Appears as a check-mode `$C` disabled acknowledgement. An 'ok' still appears immediately after to denote the `$C` was parsed and executed. Grbl is automatically reset afterwards to restore all default g-code parser states changed by the check-mode.
+  - `[MSG:Disabled]` - 显示为检查模式 `$C` 禁用确认。'ok' 仍然会在表示 `$C` 被解析和执行后立即出现。之后 Grbl 会自动重置，以恢复由检查模式更改的所有默认 g 代码解析器状态。
 
-  - `[MSG:Check Door]` - This message appears whenever the safety door detected as open. This includes immediately upon a safety door switch detects a pin change or appearing after the welcome message, if the safety door is ajar when Grbl initializes after a power-up/reset.
+  - `[MSG:Check Door]` - 只要检测到安全门打开，就会出现此消息。这包括在安全门开关检测到引脚变化或在欢迎消息之后出现时，如果在 Grbl 在上电/重置后初始化时安全门是半开的。
 
-    - If in motion and the safety door switch is triggered, Grbl will immediately send this message, start a feed hold, and place Grbl into a suspend with the DOOR state.
-    - If not in motion and not at startup, the same process occurs without the feed hold.
-    - If Grbl is in a DOOR state and already suspended, any detected door switch pin detected will generate this message, including a door close.
-    - If this message appears at startup, Grbl will suspended into immediately into the DOOR state. The startup lines are executed immediately after the DOOR state is exited by closing the door and sending Grbl a resume command.
+    - 如果在运动中并且安全门开关被触发，Grbl 将立即发送此消息，启动进给暂停，并将 Grbl 置于具有 DOOR 状态的挂起状态。
+    - 如果不在运动中且不在启动时，则在没有进给保持的情况下发生相同的过程。
+    - 如果 Grbl 处于 DOOR 状态并已暂停，则检测到的任何检测到的门开关销都会生成此消息，包括关门。
+    - 如果在启动时出现此消息，Grbl 将立即暂停进入 DOOR 状态。启动行在通过关闭门并发送 Grbl 恢复命令退出 DOOR 状态后立即执行。
 
-  - `[MSG:Check Limits]` - If Grbl detects a limit switch as triggered after a power-up/reset and hard limits are enabled, this will appear as a courtesy message immediately after the Grbl welcome message.
+  - `[MSG:Check Limits]` - 如果 Grbl 在上电/重置和启用硬限制后检测到限位开关被触发，这将在 Grbl 欢迎消息后立即显示为礼貌消息。
 
-  - `[MSG:Pgm End]` - M2/30 program end message to denote g-code modes have been restored to defaults according to the M2/30 g-code description.
+  - `[MSG:Pgm End]` - 根据 M2/30 g-code 描述，表示 g-code 模式的 M2/30 程序结束消息已恢复为默认值。
 
-  - `[MSG:Restoring defaults]` - Appears as an acknowledgement message when restoring EEPROM defaults via a `$RST=` command. An 'ok' still appears immediately after to denote the `$RST=` was parsed and executed.
+  - `[MSG:Restoring defaults]` - 当通过 `$RST=` 命令恢复 EEPROM 默认值时显示为确认消息。'ok' 仍然会在表示 `$RST=` 被解析和执行后立即出现。
   
-  - `[MSG:Sleeping]` - Appears as an acknowledgement message when Grbl's sleep mode is invoked by issuing a `$SLP` command when in IDLE or ALARM states. Note that Grbl-Mega may invoke this at any time when the sleep timer option has been enabled and the timeout has been exceeded. Grbl may only be exited by a reset in the sleep state and will automatically enter an alarm state since the steppers were disabled.
-	  - NOTE: Sleep will also invoke the parking motion, if it's enabled. However, if sleep is commanded during an ALARM, Grbl will not park and will simply de-energize everything and go to sleep.
+  - `[MSG:Sleeping]` - 当 Grbl 的睡眠模式在空闲或警报状态下通过发出 `$SLP` 命令调用时，作为确认消息出现。请注意，Grbl-Mega 可能会在启用睡眠计时器选项且超时已超出的任何时间调用它。Grbl 只能在睡眠状态下通过复位退出，并且由于步进器被禁用，它将自动进入警报状态。
+	  - 注意：睡眠也会调用停车动作，如果它被启用。但是，如果在警报期间发出睡眠指令，Grbl 将不会停车，而只会让所有设备断电并进入睡眠状态。
 
-- **Queried Feedback Messages:**
+- **查询反馈信息：**
 
-	- `[GC:]` G-code Parser State Message 
+	- `[GC:]` G 代码解析器状态消息 
 
-		```
+		``
 		[GC:G0 G54 G17 G21 G90 G94 M5 M9 T0 F0.0 S0]
-		ok
-		```
+		行
+		``
 		
-   		- Initiated by the user via a `$G` command. Grbl replies as follows, where the `[GC:` denotes the message type and is followed by a separate `ok` to confirm the `$G` was executed.
+   		- 由用户通过`$G` 命令启动。Grbl 回复如下，其中 `[GC:` 表示消息类型，后跟单独的 `ok` 以确认 `$G` 已执行。
      	
-     	- The shown g-code are the current modal states of Grbl's g-code parser. This may not correlate to what is executing since there are usually several motions queued in the planner buffer.
+     	- 显示的 g 代码是 Grbl 的 g 代码解析器的当前模式状态。这可能与正在执行的内容无关，因为通常有几个运动在规划器缓冲区中排队。
      	
-     	- NOTE: Program modal state has been fixed and will show `M0`, `M2`, or `M30` when they are active. During a run state, nothing will appear for program modal state.
+     	- 注意：程序模态状态已修复，当它们处于活动状态时将显示“M0”、“M2”或“M30”。在运行状态期间，程序模态状态不会显示任何内容。
      	 
 
 
-  - `[HLP:]` : Initiated by the user via a `$` print help command. The help message is shown below with a separate `ok` to confirm the `$` was executed.
-    ```
+  - `[HLP:]` : 由用户通过 `$` 打印帮助命令启动。帮助消息如下所示，带有单独的“ok”以确认“$”已执行。
+    ``
     [HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $C $X $H ~ ! ? ctrl-x]
-    ok
-    ```
-		- _**NOTE:** Grbl v1.1's new override real-time commands are not included in the help message. They use the extended-ASCII character set, which are not easily type-able, and require a GUI that supports them. This is for two reasons: Establish enough characters for all of the overrides with extra for later growth, and prevent accidental keystrokes or characters in a g-code file from enacting an override inadvertently._
+    行
+    ``
+		- _**注意：** Grbl v1.1 的新覆盖实时命令未包含在帮助消息中。它们使用不易输入的扩展 ASCII 字符集，并且需要支持它们的 GUI。这是出于两个原因：为所有覆盖建立足够的字符以供以后增长，并防止意外击键或 g 代码文件中的字符无意中执行覆盖。_
 
 
-  - The `$#` print parameter data query produces a large set of data which shown below and completed by an `ok` response message.
+  - `$#` 打印参数数据查询产生大量数据，如下所示，并由 `ok` 响应消息完成。
 
-    	- Each line of the printout is starts with the data type, a `:`, and followed by the data values. If there is more than one, the order is XYZ axes, separated by commas.
+    	- 打印输出的每一行都以数据类型开头，一个`:`，然后是数据值。如果有多个，则顺序为 XYZ 轴，以逗号分隔。
 
-      		```
+      		``
       [G54:0.000,0.000,0.000]
       [G55:0.000,0.000,0.000]
       [G56:0.000,0.000,0.000]
@@ -401,284 +401,284 @@ Feedback messages provide non-critical information on what Grbl is doing, what i
       [G92:0.000,0.000,0.000]
       [TLO:0.000]
       [PRB:0.000,0.000,0.000:0]
-      ok
-      ```
+      行
+      ``
 
-    	- The `PRB:` probe parameter message includes an additional `:` and suffix value is a boolean. It denotes whether the last probe cycle was successful or not.
+    	- `PRB:` 探测参数消息包括一个额外的 `:`，后缀值为布尔值。它表示最后一次探测周期是否成功。
 
-  - `[VER:]` and `[OPT:]`: Indicates build info data from a `$I` user query. These build info messages are followed by an `ok` to confirm the `$I` was executed, like so:
+  - `[VER:]` 和 `[OPT:]`：表示来自 `$I` 用户查询的构建信息数据。这些构建信息消息后跟一个 `ok` 以确认 `$I` 已被执行，如下所示：
  
-      ```
-      [VER:v1.1f.20170131:Some string]
-      [OPT:VL,16,128]
-      ok
-      ```
+      ``
+      [VER:v1.1f.20170131:一些字符串]
+      [选择：VL,16,128]
+      行
+      ``
       
-  		- The first line `[VER:]` contains the build version and date.
-      - A string may appear after the second `:` colon. It is a stored EEPROM string a user via a `$I=line` command or OEM can place there for personal use or tracking purposes.
-  		- The `[OPT:]` line follows immediately after and contains character codes for compile-time options that were either enabled or disabled and two values separated by commas, which indicates the total usable planner blocks and serial RX buffer bytes, respectively. The codes are defined below and a CSV file is also provided for quick parsing. This is generally only used for quickly diagnosing firmware bugs or compatibility issues. 
+  		- 第一行 `[VER:]` 包含构建版本和日期。
+      - 字符串可能出现在第二个`:` 冒号之后。它是一个存储的 EEPROM 字符串，用户可以通过 `$I=line` 命令或 OEM 将其放置在那里供个人使用或跟踪目的。
+  		- `[OPT:]` 行紧随其后，包含启用或禁用的编译时选项的字符代码以及用逗号分隔的两个值，分别表示可用的规划器块和串行 RX 缓冲区字节总数。代码定义如下，还提供了一个 CSV 文件用于快速解析。这通常仅用于快速诊断固件错误或兼容性问题。
 
-			| `OPT` Code | Setting Description, Units |
+			| `OPT` 代码 | 设置说明，单位 |
 |:-------------:|----|
-| **`V`** | Variable spindle enabled |
-| **`N`** | Line numbers enabled |
-| **`M`** | Mist coolant enabled |
-| **`C`** | CoreXY enabled |
-| **`P`** | Parking motion enabled |
-| **`Z`** | Homing force origin enabled |
-| **`H`** | Homing single axis enabled |
-| **`T`** | Two limit switches on axis enabled |
-| **`D`** | Spindle direction pin used as enable pin |
-| **`0`** | Spindle enable off when speed is zero enabled |
-| **`S`** | Software limit pin debouncing enabled |
-| **`R`** | Parking override control enabled |
-| **`A`** | Allow feed rate overrides in probe cycles |
-| **`+`** | Safety door input pin enabled |
-| **`*`** | Restore all EEPROM disabled |
-| **`$`** | Restore EEPROM `$` settings disabled |
-| **`#`** | Restore EEPROM parameter data disabled |
-| **`I`** | Build info write user string disabled |
-| **`E`** | Force sync upon EEPROM write disabled |
-| **`W`** | Force sync upon work coordinate offset change disabled |
-| **`L`** | Homing initialization auto-lock disabled |
+| **`V`** | 可变主轴启用 |
+| **`N`** | 行号已启用 |
+| **`M`** | 雾冷却启用 |
+| **`C`** | 启用 CoreXY |
+| **`P`** | 停车动作启用 |
+| **`Z`** | 已启用归位力原点 |
+| **`H`** | 启用单轴回零 |
+| **`T`** | 启用轴上的两个限位开关 |
+| **`D`** | 主轴方向引脚用作使能引脚|
+| **`0`** | 速度为零时主轴使能关闭使能 |
+| **`S`** | 启用软件限制引脚去抖动 |
+| **`R`** | 停车超越控制启用 |
+| **`A`** | 在探测循环中允许进给率覆盖|
+| **`+`** | 安全门输入引脚使能 |
+| **`*`** | 恢复所有禁用的 EEPROM |
+| **`$`** | 恢复 EEPROM `$` 设置禁用 |
+| **`#`** | 恢复 EEPROM 参数数据禁用 |
+| **`我`** | 构建信息写入用户字符串已禁用 |
+| **`E`** | 禁用 EEPROM 写入时强制同步 |
+| **`W`** | 禁用工作坐标偏移更改时强制同步 |
+| **`L`** | 已禁用归位初始化自动锁定 |
     
-  - `[echo:]` : Indicates an automated line echo from a command just prior to being parsed and executed. May be enabled only by a config.h option. Often used for debugging communication issues. A typical line echo message is shown below. A separate `ok` will eventually appear to confirm the line has been parsed and executed, but may not be immediate as with any line command containing motions.
-      ```
-      [echo:G1X0.540Y10.4F100]
-      ```
-      - NOTE: The echoed line will have been pre-parsed a bit by Grbl. No spaces or comments will appear and all letters will be capitalized.
+  - `[echo:]` ：表示在解析和执行之前来自命令的自动行回显。只能通过 config.h 选项启用。通常用于调试通信问题。典型的线路回显消息如下所示。一个单独的“ok”最终会出现以确认该行已被解析和执行，但可能不会像任何包含动作的行命令那样立即执行。
+      ``
+      [回声：G1X0.540Y10.4F100]
+      ``
+      - 注意：Grbl 会预先解析回显的行。不会出现空格或注释，所有字母都将大写。
 
 ------
 
-#### Startup Line Execution
+#### 启动线执行
 
-  - `>G54G20:ok` : The open chevron indicates a startup line has just executed. The startup line `G54G20` immediately follows the `>` character and is followed by an `:ok` response to indicate it executed successfully.
+  - `>G54G20:ok`：打开的 V 形表示刚刚执行了启动行。启动行 `G54G20` 紧跟在 `>` 字符之后，并紧跟一个 `:ok` 响应以表明它已成功执行。
 
-    - A startup line will execute upon initialization only if a line is present and if Grbl is not in an alarm state.
+    - 仅当存在一行且 Grbl 未处于警报状态时，才会在初始化时执行启动行。
 
-    - The `:ok` on the same line is intentional. It prevents this `ok` response from being counted as part of a stream, because it is not tied to a sent command, but an internally-generated one.
+    - 同一行的 `:ok` 是有意的。它可以防止将此“ok”响应计为流的一部分，因为它不与发送的命令相关联，而是与内部生成的命令相关联。
 
-    - There should always be an appended `:ok` because the startup line is checked for validity before it is stored in EEPROM. In the event that it's not, Grbl will print `>G54G20:error:X`, where `X` is the error code explaining why the startup line failed to execute.
+    - 应该总是附加一个`:ok`，因为在将启动行存储到 EEPROM 之前，它会检查其有效性。如果不是，Grbl 将打印 `>G54G20:error:X`，其中 `X` 是解释启动行失败原因的错误代码。
 
-    - In the rare chance that there is an EEPROM read error, the startup line execution will print `>:error:7` with no startup line and a error code `7` for a read fail. Grbl will also automatically wipe and try to restore the problematic EEPROM.
+    - 在出现 EEPROM 读取错误的极少数情况下，启动行执行将打印 `>:error:7` 没有启动行，并且读取失败的错误代码为 `7`。Grbl 还会自动擦除并尝试恢复有问题的 EEPROM。
 
 
 ------
 
-#### Real-time Status Reports
+#### 实时状态报告
 
-- Contains real-time data of Grbl’s state, position, and other data required independently of the stream.
+- 包含 Grbl 的状态、位置和其他独立于流所需的数据的实时数据。
 
-- Categorized as a real-time message, where it is a separate message that should not be counted as part of the streaming protocol. It may appear at any given time.
+- 归类为实时消息，它是一个单独的消息，不应被视为流协议的一部分。它可能在任何给定时间出现。
 
-- A status report is initiated by sending Grbl a '?' character.
+- 通过向 Grbl 发送一个“?”来启动状态报告 特点。
 
-  - Like all real-time commands, the '?' character is intercepted and never enters the serial buffer. It's never a part of the stream and can be sent at any time.
+  - 像所有实时命令一样，'?' 字符被截获并且永远不会进入串行缓冲区。它永远不是流的一部分，可以随时发送。
 
-  - Grbl will generate and transmit a report within ~5-20 milliseconds.
+  - Grbl 将在约 5-20 毫秒内生成并传输报告。
 
-  - Every ’?’ command sent by a GUI is not guaranteed with a response. The following are the current scenarios when Grbl may not immediately or ignore a status report request. _NOTE: These may change in the future and will be documented here._
+  - 每一个 '？' GUI 发送的命令不能保证有响应。以下是 Grbl 可能不会立即或忽略状态报告请求的当前场景。_注意：这些将来可能会发生变化，并将在此处记录。_
 
-    - If two or more '?' queries are sent before the first report is generated, the additional queries are ignored.
+    - 如果有两个或更多 '?' 在生成第一个报告之前发送查询，其他查询将被忽略。
 
-    - A soft-reset commanded clears the last status report query.
+    - 软复位命令清除上次状态报告查询。
 
-    - When Grbl throws a critical alarm from a limit violation. A soft-reset is required to resume operation.
+    - 当 Grbl 因违反限制而发出严重警报时。需要软复位才能恢复操作。
 
-    - During a homing cycle.
+    - 在归位周期中。
 
-- **Message Construction:**
+- **消息构造：**
 
-  - A message is a single line of ascii text, completed by a carriage return and line feed.
+  - 消息是一行 ASCII 文本，由回车和换行完成。
 
-  - `< >` Chevrons uniquely enclose reports to indicate message type.
+  - `< >` V 形标志唯一地包含报告以指示消息类型。
 
-  - `|` Pipe delimiters separate data fields inside the report.
+  - `|` 管道分隔符分隔报告内的数据字段。
 
-  - The first data field is an exception to the following data field rules. See 'Machine State' description for details.
+  - 第一个数据字段是以下数据字段规则的例外。有关详细信息，请参阅“机器状态”说明。
 
-  - All remaining data fields consist of a data type followed by a `:` colon delimiter and data values. `type:value(s)`
+  - 所有剩余的数据字段都包含一个数据类型，后跟一个`:` 冒号分隔符和数据值。`类型：值（S）`
 
-  - Data values are given either as as one or more pre-defined character codes to indicate certain states/conditions or as numeric values, which are separated by a `,` comma delimiter when more than one is present. Numeric values are also in a pre-defined order and units of measure.
+  - 数据值以一个或多个预定义字符代码的形式给出，以指示某些状态/条件，或者作为数字值给出，当存在多个时，用“,”逗号分隔符分隔。数值也按预先定义的顺序和测量单位排列。
 
-  - The first (Machine State) and second (Current Position) data fields are always included in every report.
+  - 每个报告中始终包含第一个（机器状态）和第二个（当前位置）数据字段。
 
-  - Assume any following data field may or may not exist and can be in any order. The `$10` status report mask setting can alter what data is present and certain data fields can be reported intermittently (see descriptions for details.)
+  - 假设以下任何数据字段可能存在也可能不存在，并且可以按任何顺序排列。`$10` 状态报告掩码设置可以更改存在的数据，并且可以间歇性地报告某些数据字段（有关详细信息，请参阅说明。）
 
-  - The `$13` report inches settings alters the units of some data values. `$13=0` false indicates mm-mode, while `$13=1` true indicates inch-mode reporting. Keep note of this setting and which report values can be altered.
+  - `$13` 报告英寸设置改变了一些数据值的单位。`$13=0` false 表示毫米模式，而 `$13=1` true 表示英寸模式报告。请注意此设置以及可以更改哪些报告值。
 
-- **Data Field Descriptions:**
+- **数据字段说明：**
 
-    - **Machine State:**
+    - **机器状态：**
 
-      - Valid states types:  `Idle, Run, Hold, Jog, Alarm, Door, Check, Home, Sleep`
+      - 有效状态类型：`空闲、运行、保持、慢跑、警报、门、检查、主页、睡眠`
 
-      - Sub-states may be included via `:` a colon delimiter and numeric code.
+      - 子状态可以通过`:` 冒号分隔符和数字代码包含在内。
 
-      - Current sub-states are:
+      - 当前的子状态是：
 
-        	- `Hold:0` Hold complete. Ready to resume.
-	     	- `Hold:1` Hold in-progress. Reset will throw an alarm.
-        	- `Door:0` Door closed. Ready to resume.
-        	- `Door:1` Machine stopped. Door still ajar. Can't resume until closed.
-        	- `Door:2` Door opened. Hold (or parking retract) in-progress. Reset will throw an alarm.
-			- `Door:3` Door closed and resuming. Restoring from park, if applicable. Reset will throw an alarm.
+        	- `Hold:0` 保持完成。准备继续。
+	     	- `Hold:1` 保持进行中。重置会发出警报。
+        	- `Door:0` 门关闭。准备继续。
+        	- `Door:1` 机器停止。门还是半开的。关闭前无法恢复。
+        	- `Door:2` 门打开了。保持（或停车缩回）进行中。重置会发出警报。
+			- `Door:3` 门关闭并恢复。如果适用，从公园恢复。重置会发出警报。
 
-      - This data field is always present as the first field.
+      - 此数据字段始终作为第一个字段出现。
 
-    - **Current Position:**
+    - **当前位置：**
 
-        - Depending on `$10` status report mask settings, position may be sent as either:
+        - 根据 `$10` 状态报告掩码设置，位置可以发送为：
 
-          - `MPos:0.000,-10.000,5.000` machine position or
-          - `WPos:-2.500,0.000,11.000` work position
+          - `MPos:0.000,-10.000,5.000` 机器位置或
+          - `WPos:-2.500,0.000,11.000` 工作位置
 
-        - **NOTE: Grbl v1.1 sends only one position vector because a GUI can easily compute the other position vector with the work coordinate offset `WCO:` data. See WCO description for details.**
+        - **注意：Grbl v1.1 仅发送一个位置向量，因为 GUI 可以使用工作坐标偏移 `WCO:` 数据轻松计算另一个位置向量。有关详细信息，请参阅 WCO 说明。**
 
-        - Three position values are given in the order of X, Y, and Z. A fourth position value may exist in later versions for the A-axis.
+        - 按照 X、Y 和 Z 的顺序给出了三个位置值。在 A 轴的后续版本中可能存在第四个位置值。
 
-        - `$13` report inches user setting effects these values and is given as either mm or inches.
+        - `$13` 报告英寸用户设置会影响这些值，并以毫米或英寸给出。
 
-        - This data field is always present as the second field.
+        - 此数据字段始终作为第二个字段出现。
 
-    - **Work Coordinate Offset:**
+    - **工作坐标偏移：**
 
-        - `WCO:0.000,1.551,5.664` is the current work coordinate offset of the g-code parser, which is the sum of the current work coordinate system, G92 offsets, and G43.1 tool length offset.
+        - `WCO:0.000,1.551,5.664` 是 g 代码解析器的当前工件坐标偏移，它是当前工件坐标系、G92 偏移和 G43.1 刀具长度偏移的总和。
 
-        - Machine position and work position are related by this simple equation per axis: `WPos = MPos - WCO`
+        - 机器位置和工作位置通过每个轴的这个简单方程相关：`WPos = MPos - WCO`
         
-        	- **GUI Developers:** Simply track and retain the last `WCO:` vector and use the above equation to compute the other position vector for your position readouts. If Grbl's status reports show either `WPos` or `MPos`, just follow the equations below. It's as easy as that!
-        		- If `WPos:` is given, use `MPos = WPos + WCO`.
-        		- If `MPos:` is given, use `WPos = MPos - WCO`.
+        	- **GUI 开发人员：** 只需跟踪并保留最后一个 `WCO:` 向量，然后使用上述等式计算位置读数的另一个位置向量。如果 Grbl 的状态报告显示“WPos”或“MPos”，只需按照下面的等式进行操作。就这么简单！
+        		- 如果给出了`WPos:`，则使用`MPos = WPos + WCO`。
+        		- 如果给出`MPos:`，则使用`WPos = MPos - WCO`。
 
-        - Values are given in the order of the X,Y, and Z axes offsets. A fourth offset value may exist in later versions for the A-axis.
-        - `$13` report inches user setting effects these values and is given as either mm or inches.
+        - 值按 X、Y 和 Z 轴偏移的顺序给出。在 A 轴的后续版本中可能存在第四个偏移值。
+        - `$13` 报告英寸用户设置会影响这些值，并以毫米或英寸给出。
 
-        - `WCO:` values don't change often during a job once set and only requires intermittent refreshing.
+        - `WCO:` 值一旦设置就不会在作业期间经常更改，并且只需要间歇性刷新。
 
-        - This data field appears:
+        - 此数据字段出现：
 
-          - In every 10 or 30 (configurable 1-255) status reports, depending on if Grbl is in a motion state or not.
-          - Immediately in the next report, if an offset value has changed.
-          - In the first report after a reset/power-cycle.
+          - 每 10 或 30（可配置 1-255）个状态报告，取决于 Grbl 是否处于运动状态。
+          - 如果偏移值已更改，则立即在下一个报告中。
+          - 在复位/重启后的第一份报告中。
 
-        - This data field will not appear if:
+        - 如果出现以下情况，则不会出现此数据字段：
 
-          - It is disabled in the config.h file. No `$` mask setting available.
-          - The refresh counter is in-between intermittent reports.       
+          - 它在 config.h 文件中被禁用。没有可用的 `$` 掩码设置。
+          - 刷新计数器介于间歇性报告之间。       
 
-    - **Buffer State:**
+    - **缓冲状态：**
 
-        - `Bf:15,128`. The first value is the number of available blocks in the planner buffer and the second is number of available bytes in the serial RX buffer.
+        - `Bf:15,128`。第一个值是规划器缓冲区中的可用块数，第二个值是串行 RX 缓冲区中的可用字节数。
         
-        - The usage of this data is generally for debugging an interface, but is known to be used to control some GUI-specific tasks. While this is disabled by default, GUIs should expect this data field to appear, but they may ignore it, if desired.
+        - 此数据的用途通常用于调试界面，但已知用于控制某些特定于 GUI 的任务。虽然默认情况下这是禁用的，但 GUI 应该期望出现此数据字段，但如果需要，他们可能会忽略它。
         
-        	- IMPORTANT: Do not use this buffer data to control streaming. During a stream, the reported buffer will often be out-dated and may be incorrect by the time it has been received by the GUI. Instead, please use the streaming protocols outlined. They use Grbl's responses as a direct way to accurately determine the buffer state.
+        	- 重要提示：请勿使用此缓冲区数据来控制流式传输。在流期间，报告的缓冲区通常已经过时，并且在 GUI 收到它时可能不正确。相反，请使用概述的流媒体协议。他们使用 Grbl 的响应作为准确确定缓冲区状态的直接方式。
         	        
-        - NOTE: The buffer state values changed from showing "in-use" blocks or bytes to "available". This change does not require the GUI knowing how many block/bytes Grbl has been compiled with.
+        - 注意：缓冲区状态值从显示“使用中”块或字节变为“可用”。此更改不需要 GUI 知道 Grbl 已编译多少块/字节。
 
-        - This data field appears:
+        - 此数据字段出现：
         
-          - In every status report when enabled. It is disabled in the settings mask by default.
+          - 在每个状态报告中启用时。默认情况下，它在设置掩码中被禁用。
         
-        - This data field will not appear if:
+        - 如果出现以下情况，则不会出现此数据字段：
 
-          - It is disabled by the `$` status report mask setting or disabled in the config.h file.
+          - 它被 `$` 状态报告掩码设置禁用或在 config.h 文件中禁用。
 
-    - **Line Number:**
+    - **电话号码：**
 
-        - `Ln:99999` indicates line 99999 is currently being executed. This differs from the `$G` line `N` value since the parser is usually queued few blocks behind execution.
+        - `Ln:99999` 表示当前正在执行第 99999 行。这与 `$G` 行的 `N` 值不同，因为解析器通常在执行后排队几个块。
 
-        - Compile-time option only because of memory requirements. However, if a GUI passes indicator line numbers onto Grbl, it's very useful to determine when Grbl is executing them.
+        - 编译时选项仅是因为内存要求。但是，如果 GUI 将指标行号传递给 Grbl，则确定 Grbl 何时执行它们非常有用。
 
-        - This data field will not appear if:
+        - 如果出现以下情况，则不会出现此数据字段：
 
-          - It is disabled in the config.h file. No `$` mask setting available.
-          - The line number reporting not enabled in config.h. Different option to reporting data field.
-          - No line number or `N0` is passed with the g-code block.
-          - Grbl is homing, jogging, parking, or performing a system task/motion.
-          - There is no motion in the g-code block like a `G4P1` dwell. (May be fixed in later versions.)
+          - 它在 config.h 文件中被禁用。没有可用的 `$` 掩码设置。
+          - config.h 中未启用行号报告。报告数据字段的不同选项。
+          - 没有行号或“N0”与 g 代码块一起传递。
+          - Grbl 正在归位、慢跑、停车或执行系统任务/动作。
+          - g 代码块中没有像“G4P1”停留那样的运动。（可能会在以后的版本中修复。）
 
-    - **Current Feed and Speed:**
+    - **当前进给和速度：**
 
-        - There are two versions of this data field that Grbl may respond with. 
+        - Grbl 可以响应此数据字段的两个版本。 
         
-        	- `F:500` contains real-time feed rate data as the value. This appears only when VARIABLE_SPINDLE is disabled in config.h, because spindle speed is not tracked in this mode.
-        	- `FS:500,8000` contains real-time feed rate, followed by spindle speed, data as the values. Note the `FS:`, rather than `F:`, data type name indicates spindle speed data is included.
+        	- `F:500` 包含实时进给率数据作为值。这仅在 config.h 中禁用 VARIABLE_SPINDLE 时出现，因为在此模式下不跟踪主轴速度。
+        	- `FS:500,8000` 包含实时进给率，其次是主轴转速，数据作为数值。注意`FS:`，而不是`F:`，数据类型名称表示包含主轴速度数据。
                 
-        - The current feed rate value is in mm/min or inches/min, depending on the `$` report inches user setting. 
-        - The second value is the current spindle speed in RPM
+        - 当前进给速率值以毫米/分钟或英寸/分钟为单位，取决于`$` 报告英寸用户设置。 
+        - 第二个值是以 RPM 为单位的当前主轴速度
         
-        - These values will often not be the programmed feed rate or spindle speed, because several situations can alter or limit them. For example, overrides directly scale the programmed values to a different running value, while machine settings, acceleration profiles, and even the direction traveled can also limit rates to maximum values allowable.
+        - 这些值通常不是编程的进给率或主轴速度，因为有几种情况会改变或限制它们。例如，覆盖直接将编程值缩放到不同的运行值，而机器设置、加速度曲线甚至行进方向也可以将速率限制为允许的最大值。
 
-        - As a operational note, reported rate is typically 30-50 msec behind actual position reported.
+        - 作为操作说明，报告的速率通常比报告的实际位置晚 30-50 毫秒。
 
-        - This data field will always appear, unless it was explicitly disabled in the config.h file.
+        - 该数据字段将始终出现，除非在 config.h 文件中明确禁用。
 
-    - **Input Pin State:**
+    - **输入引脚状态：**
 
-        - `Pn:XYZPDHRS` indicates which input pins Grbl has detected as 'triggered'.
+        - `Pn:XYZPDHRS` 指示 Grbl 检测到哪些输入引脚为“触发”。
 
-        - Pin state is evaluated every time a status report is generated. All input pin inversions are appropriately applied to determine 'triggered' states.
+        - 每次生成状态报告时都会评估引脚状态。所有输入引脚反转都被适当地应用于确定“触发”状态。
 
-        - Each letter of `XYZPDHRS` denotes a particular 'triggered' input pin.
+        - `XYZPDHRS` 的每个字母表示一个特定的“触发”输入引脚。
 
-          - `X Y Z` XYZ limit pins, respectively
-          - `P` the probe pin.
-          - `D H R S` the door, hold, soft-reset, and cycle-start pins, respectively.
-          - Example: `Pn:PZ` indicates the probe and z-limit pins are 'triggered'.
-          - Note: `A` may be added in later versions for an A-axis limit pin.
+          - `XYZ` XYZ 限位销，分别
+          - `P` 探针。
+          - `DHRS` 分别是门、保持、软复位和循环启动引脚。
+          - 示例：`Pn:PZ` 表示探针和 z-limit 引脚被“触发”。
+          - 注意：`A` 可能会在以后的版本中添加用于 A 轴限制销。
 
-        - Assume input pin letters are presented in no particular order.
+        - 假设输入引脚字母没有特定的顺序。
 
-        - One or more 'triggered' pin letter(s) will always be present with a `Pn:` data field.
+        - 一个或多个“触发的”引脚字母将始终与“Pn:”数据字段一起出现。
 
-        - This data field will not appear if:
+        - 如果出现以下情况，则不会出现此数据字段：
 
-          - It is disabled in the config.h file. No `$` mask setting available.
-          - No input pins are detected as triggered.
+          - 它在 config.h 文件中被禁用。没有可用的 `$` 掩码设置。
+          - 没有检测到输入引脚被触发。
 
-    - **Override Values:**
+    - **覆盖值：**
 
-        - `Ov:100,100,100` indicates current override values in percent of programmed values for feed, rapids, and spindle speed, respectively.
+        - `Ov:100,100,100` 分别以进给、快速和主轴速度的编程值的百分比表示当前的倍率值。
 
-        - Override maximum, minimum, and increment sizes are all configurable within config.h. Assume that a user or OEM will alter these based on customized use-cases. Recommend not hard-coding these values into a GUI, but rather just show the actual override values and generic increment buttons.
+        - 覆盖最大、最小和增量大小都可以在 config.h 中配置。假设用户或 OEM 将根据自定义用例更改这些。建议不要将这些值硬编码到 GUI 中，而只是显示实际覆盖值和通用增量按钮。
 
-        - Override values don't change often during a job once set and only requires intermittent refreshing. This data field appears:
+        - 一旦设置，覆盖值在作业期间不会经常更改，只需要间歇性刷新。此数据字段出现：
 
-          - After 10 or 20 (configurable 1-255) status reports, depending on is in a motion state or not.
-          - If an override value has changed, this data field will appear immediately in the next report. However, if `WCO:` is present, this data field will be delayed one report.
-          - In the second report after a reset/power-cycle.
+          - 10 或 20（可配置 1-255）状态报告后，取决于是否处于运动状态。
+          - 如果覆盖值已更改，此数据字段将立即出现在下一个报告中。但是，如果存在`WCO:`，则此数据字段将延迟一份报告。
+          - 在重置/重启后的第二份报告中。
 
-        - This data field will not appear if:
+        - 如果出现以下情况，则不会出现此数据字段：
 
-          - It is disabled in the config.h file. No `$` mask setting available.
-          - The override refresh counter is in-between intermittent reports.
-          - `WCO:` exists in current report during refresh. Automatically set to try again on next report.
+          - 它在 config.h 文件中被禁用。没有可用的 `$` 掩码设置。
+          - 覆盖刷新计数器介于间歇性报告之间。
+          - `WCO:` 在刷新期间存在于当前报告中。自动设置为在下次报告时重试。
 
-	- **Accessory State:**
+	- **附件状态：**
 
-		- `A:SFM` indicates the current state of accessory machine components, such as the spindle and coolant.
+		- `A:SFM` 指示辅助机器组件的当前状态，例如主轴和冷却液。
 
-		- Due to the new toggle overrides, these machine components may not be running according to the g-code program. This data is provided to ensure the user knows exactly what Grbl is doing at any given time.
+		- 由于新的切换覆盖，这些机器组件可能不会根据 g 代码程序运行。提供这些数据是为了确保用户在任何给定时间确切地知道 Grbl 正在做什么。
 		
-		- Each letter after `A:` denotes a particular state. When it appears, the state is enabled. When it does not appear, the state is disabled.
+		- `A:` 后面的每个字母表示一个特定的状态。当它出现时，状态为启用。当它不出现时，状态是禁用的。
 
-			- `S` indicates spindle is enabled in the CW direction. This does not appear with `C`.
-			- `C` indicates spindle is enabled in the CCW direction. This does not appear with `S`.
-        	- `F` indicates flood coolant is enabled.
-        	- `M` indicates mist coolant is enabled.
+			- `S` 表示在 CW 方向启用主轴。这不会出现在 `C` 中。
+			- `C` 表示在 CCW 方向启用主轴。这不会与“S”一起出现。
+        	- `F` 表示启用了溢流冷却剂。
+        	- `M` 表示启用雾状冷却剂。
 		
-	   - Assume accessory state letters are presented in no particular order.
+	   - 假设附件状态字母没有特定的顺序。
       
-      - This data field appears:
+      - 此数据字段出现：
 
-			- When any accessory state is enabled.
-        	- Only with the override values field in the same message. Any accessory state change will trigger the accessory state and override values fields to be shown on the next report.
+			- 启用任何附件状态时。
+        	- 仅在同一消息中具有覆盖值字段。任何附件状态更改都会触发附件状态和覆盖值字段以显示在下一个报告中。
 
-      - This data field will not appear if:
+      - 如果出现以下情况，则不会出现此数据字段：
 
-        	- No accessory state is active.
-        	- It is disabled in the config.h file. No `$` mask setting available.
-        	- If override refresh counter is in-between intermittent reports.
-        	- `WCO:` exists in current report during refresh. Automatically set to try again on next report.
+        	- 没有附件状态处于活动状态。
+        	- 它在 config.h 文件中被禁用。没有可用的 `$` 掩码设置。
+        	- 如果覆盖刷新计数器介于间歇性报告之间。
+        	- `WCO:` 在刷新期间存在于当前报告中。自动设置为在下次报告时重试。
