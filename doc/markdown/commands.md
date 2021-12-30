@@ -1,48 +1,48 @@
-# Grbl v1.1 Commands
+# Grbl v1.1 命令
 
-In general, Grbl assumes all characters and streaming data sent to it is g-code and will parse and try to execute it as soon as it can. However, Grbl also has two separate system command types that are outside of the normal g-code streaming. One system command type is streamed to Grbl like g-code, but starts with a `$` character to tell Grbl it's not g-code. The other is composed of a special set of characters that will immediately command Grbl to do a task in real-time. It's not part of the g-code stream. Grbl's system commands do things like control machine state, report saved parameters or what Grbl is doing, save or print machine settings, run a homing cycle, or make the machine move faster or slower than programmed. This document describes these "internal" system Grbl commands, what they do, how they work, and how to use them.
+通常，Grbl 假定发送给它的所有字符和流数据都是 g 代码，并且会尽快解析并尝试执行它。然而，Grbl 也有两种独立的系统命令类型，它们在正常的 g 代码流之外。一种系统命令类型像 g-code 一样流式传输到 Grbl，但以 `$` 字符开头来告诉 Grbl 它不是 g-code。另一个由一组特殊的字符组成，它们将立即命令 Grbl 实时执行任务。它不是 g 代码流的一部分。Grbl 的系统命令执行诸如控制机器状态、报告保存的参数或 Grbl 正在做什么、保存或打印机器设置、运行归位循环或使机器移动得比编程更快或更慢等操作。本文档描述了这些“内部”系统 Grbl 命令，它们的作用，它们如何工作，
 
-## Getting Started
+＃＃ 入门
 
-First, connect to Grbl using the serial terminal of your choice.
+首先，使用您选择的串行终端连接到 Grbl。
 
-Set the baud rate  to **115200** as 8-N-1 (8-bits, no parity, and 1-stop bit.)
+将波特率设置为 **115200** 为 8-N-1（8 位，无奇偶校验，1 个停止位。）
 
-Once connected
- you should get the Grbl-prompt, which looks like this:
+一旦连接
+ 你应该得到 Grbl 提示，它看起来像这样：
 
 ```
-Grbl 1.1e ['$' for help]
+Grbl 1.1e ['$' 寻求帮助]
 ```
 
-Type $ and press enter to have Grbl print a help message. You should not see any local echo of the $ and enter. Grbl should respond with:
+输入 $ 并按回车键让 Grbl 打印帮助信息。您不应该看到 $ 的任何本地回声并输入。Grbl 应该回应：
 
 ```
 [HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $SLP $C $X $H ~ ! ? ctrl-x]
 ```
 
-The ‘$’-commands are Grbl system commands used to tweak the settings, view or change Grbl's states and running modes, and start a homing cycle. The last four **non**-'$' commands are realtime control commands that can be sent at anytime, no matter what Grbl is doing. These either immediately change Grbl's running behavior or immediately print a report of the important realtime data like current position (aka DRO). There are over a dozen more realtime control commands, but they are not user type-able. See realtime command section for details.
+'$'-commands 是 Grbl 系统命令，用于调整设置、查看或更改 Grbl 的状态和运行模式，以及启动归位循环。最后四个 **non**-'$' 命令是实时控制命令，可以随时发送，不管 Grbl 在做什么。这些要么立即改变 Grbl 的运行行为，要么立即打印重要实时数据的报告，如当前位置（又名 DRO）。还有十多个实时控制命令，但它们不是用户可以键入的。有关详细信息，请参阅实时命令部分。
 
 ***
 
-## Grbl '$' Commands
+## Grbl '$' 命令
 
-The `$` system commands provide additional controls for the user, such as printing feedback on the current G-code parser modal state or running the homing cycle. This section explains what these commands are and how to use them.
+`$` 系统命令为用户提供额外的控制，例如打印当前 G 代码解析器模式状态的反馈或运行归位循环。本节说明这些命令是什么以及如何使用它们。
 
-#### `$$`and `$x=val` - View and write Grbl settings
-See [Grbl v1.1 Configuration](https://github.com/gnea/grbl/wiki/Grbl-v1.1-Configuration#grbl-settings) for more details on how to view and write setting and learn what they are.
+#### `$$` 和 `$x=val` - 查看和写入 Grbl 设置
+请参阅 [Grbl v1.1 配置](https://github.com/gnea/grbl/wiki/Grbl-v1.1-Configuration#grbl-settings) 了解有关如何查看和编写设置以及了解它们是什么的更多详细信息.
 
-#### `$#` - View gcode parameters
+#### `$#` - 查看 gcode 参数
 
-G-code parameters store the coordinate offset values for G54-G59 work coordinates, G28/G30 pre-defined positions, G92 coordinate offset, tool length offsets, and probing (not officially, but we added here anyway). Most of these parameters are directly written to EEPROM anytime they are changed and are persistent. Meaning that they will remain the same, regardless of power-down, until they are explicitly changed. The non-persistent parameters, which will are not retained when reset or power-cycled, are G92, G43.1 tool length offsets, and the G38.2 probing data.
+G 代码参数存储 G54-G59 工作坐标、G28/G30 预定义位置、G92 坐标偏移、刀具长度偏移和探测的坐标偏移值（不是官方的，但我们在这里添加了）。这些参数中的大多数在更改时都会直接写入 EEPROM 并保持不变。这意味着它们将保持不变，无论断电如何，直到它们被明确更改。非持久性参数是 G92、G43.1 刀具长度偏置和 G38.2 探测数据，在复位或重新上电时不会保留。
 
-G54-G59 work coordinates can be changed via the `G10 L2 Px` or `G10 L20 Px` command defined by the NIST gcode standard and the EMC2 (linuxcnc.org) standard. G28/G30 pre-defined positions can be changed via the `G28.1` and the `G30.1` commands, respectively.
+G54-G59 工作坐标可以通过 NIST gcode 标准和 EMC2 (linuxcnc.org) 标准定义的“G10 L2 Px”或“G10 L20 Px”命令进行更改。G28/G30 预定义位置可以分别通过`G28.1` 和`G30.1` 命令进行更改。
 
-When `$#` is called, Grbl will respond with the stored offsets from machine coordinates for each system as follows. `TLO` denotes tool length offset (for the default z-axis), and `PRB` denotes the coordinates of the last probing cycle, where the suffix `:1` denotes if the last probe was successful and `:0` as not successful.
+当`$#` 被调用时，Grbl 将使用存储的每个系统的机器坐标偏移量进行响应，如下所示。`TLO` 表示刀具长度偏移（对于默认的 z 轴），而 `PRB` 表示最后一次探测循环的坐标，其中后缀 `:1` 表示最后一次探测是否成功，`:0` 表示不成功成功的。
 
 ```
 [G54:4.000,0.000,0.000]
-[G55:4.000,6.000,7.000]
+[G55:4,000,6,000,7,000]
 [G56:0.000,0.000,0.000]
 [G57:0.000,0.000,0.000]
 [G58:0.000,0.000,0.000]
@@ -50,296 +50,296 @@ When `$#` is called, Grbl will respond with the stored offsets from machine coor
 [G28:1.000,2.000,0.000]
 [G30:4.000,6.000,0.000]
 [G92:0.000,0.000,0.000]
-[TLO:0.000]
-[PRB:0.000,0.000,0.000:0]
+[TLO：0.000]
+[PRB: 0.000,0.000,0.000: 0]
 ```
 
-#### `$G` - View gcode parser state
+#### `$G` - 查看 gcode 解析器状态
 
-This command prints all of the active gcode modes in Grbl's G-code parser. When sending this command to Grbl, it will reply with a message starting with an `[GC:` indicator like: 
+此命令打印 Grbl 的 G 代码解析器中的所有活动 gcode 模式。当将此命令发送到 Grbl 时，它会回复一条以 `[GC:` 指示符开头的消息，例如：
 
 ```
 [GC:G0 G54 G17 G21 G90 G94 M0 M5 M9 T0 S0.0 F500.0]
 ```
 
-These active modes determine how the next G-code block or command will be interpreted by Grbl's G-code parser. For those new to G-code and CNC machining, modes sets the parser into a particular state so you don't have to constantly tell the parser how to parse it. These modes are organized into sets called "modal groups" that cannot be logically active at the same time. For example, the units modal group sets whether your G-code program is interpreted in inches or in millimeters.
+这些活动模式决定了 Grbl 的 G 代码解析器将如何解释下一个 G 代码块或命令。对于 G 代码和 CNC 加工的新手，模式将解析器设置为特定状态，因此您不必经常告诉解析器如何解析它。这些模式被组织成称为“模式组”的集合，它们不能同时在逻辑上处于活动状态。例如，单位模态组设置您的 G 代码程序是以英寸还是毫米为单位进行解释的。
 
-A short list of the modal groups, supported by Grbl, is shown below, but more complete and detailed descriptions can be found at LinuxCNC's [website](http://www.linuxcnc.org/docs/2.4/html/gcode_overview.html#sec:Modal-Groups). The G-code commands in **bold** indicate the default modes upon powering-up Grbl or resetting it. The commands in _italics_ indicate a special Grbl-only command.
+Grbl 支持的模态组的简短列表如下所示，但更完整和详细的描述可以在 LinuxCNC 的 [网站](http://www.linuxcnc.org/docs/2.4/html/gcode_overview.html #sec：模态组）。**粗体**中的 G 代码命令表示 Grbl 上电或重置时的默认模式。_italics_ 中的命令表示一个特殊的 Grbl-only 命令。
 
-| Modal Group Meaning	|  Member Words |
+| 模态组含义 | 成员词 |
 |:----:|:----:|
-| Motion Mode | **G0**, G1, G2, G3, G38.2, G38.3, G38.4, G38.5, G80 |
-|Coordinate System Select	| **G54**, G55, G56, G57, G58, G59|
-|Plane Select	| **G17**, G18, G19|
-|Distance Mode	| **G90**, G91|
-|Arc IJK Distance Mode | **G91.1** |
-|Feed Rate Mode	| G93, **G94**|
-|Units Mode	| G20, **G21**|
-|Cutter Radius Compensation | **G40** |
-|Tool Length Offset |G43.1, **G49**|
-|Program Mode | **M0**, M1, M2, M30|
-|Spindle State |M3, M4, **M5**|
-|Coolant State	| M7, M8, **M9** |
-|Override Control | _M56_ |
+| 运动模式 | **G0**、G1、G2、G3、G38.2、G38.3、G38.4、G38.5、G80 |
+|坐标系选择 | **G54**、G55、G56、G57、G58、G59|
+|平面选择 | **G17**、G18、G19|
+|远距离模式 | **G90**、G91|
+|Arc IJK 距离模式 | **G91.1** |
+|进给率模式| G93, **G94**|
+|单位模式 | G20, **G21**|
+|刀具半径补偿 | **G40** |
+|刀具长度偏移 |G43.1, **G49**|
+|程序模式| **M0**、M1、M2、M30|
+|主轴状态 |M3、M4、**M5**|
+|冷却液状态 | M7、M8、**M9** |
+|覆盖控制 | _M56_ |
 
-Grbl supports a special _M56_ override control command, where this enables and disables Grbl's parking motion when a `P1` or a `P0` is passed with `M56`, respectively. This command is only available when both parking and this particular option is enabled.
+Grbl 支持一个特殊的 _M56_ 覆盖控制命令，当`P1` 或`P0` 分别与`M56` 一起传递时，它会启用和禁用Grbl 的停车运动。此命令仅在启用停车和此特定选项时可用。
 
-In addition to the G-code parser modes, Grbl will report the active `T` tool number, `S` spindle speed, and `F` feed rate, which all default to 0 upon a reset. For those that are curious, these don't quite fit into nice modal groups, but are just as important for determining the parser state.
+除了 G 代码解析器模式之外，Grbl 还将报告活动的“T”刀具编号、“S”主轴速度和“F”进给率，这些在重置时均默认为 0。对于那些好奇的人来说，这些不太适合很好的模态组，但对于确定解析器状态同样重要。
 
-#### `$I` - View build info
-This prints feedback to the user the Grbl version and source code build date. Optionally, `$I` can also store a short string to help identify which CNC machine you are communicating with, if you have more than machine using Grbl. To set this string, send Grbl `$I=xxx`, where `xxx` is your customization string that is less than 80 characters. The next time you query Grbl with a `$I` view build info, Grbl will print this string after the version and build date.
+#### `$I` - 查看构建信息
+这会向用户打印 Grbl 版本和源代码构建日期的反馈。可选地，`$I` 还可以存储一个短字符串，以帮助识别您正在与哪台 CNC 机器进行通信，如果您有多个使用 Grbl 的机器。要设置此字符串，请发送 Grbl `$I=xxx`，其中 `xxx` 是少于 80 个字符的自定义字符串。下次当您使用 `$I` 查看构建信息查询 Grbl 时，Grbl 将在版本和构建日期之后打印此字符串。
 
-NOTE: Some OEMs may block access to over-writing the build info string so they can store product information and codes there.
+注意：一些 OEM 可能会阻止访问覆盖构建信息字符串，以便他们可以在那里存储产品信息和代码。
 
-#### $N - View startup blocks
+#### $N - 查看启动块
 
-`$Nx` are the startup blocks that Grbl runs every time you power on Grbl or reset Grbl. In other words, a startup block is a line of G-code that you can have Grbl auto-magically run to set your G-code modal defaults, or anything else you need Grbl to do everytime you start up your machine. Grbl can store two blocks of G-code as a system default.
+`$Nx` 是每次打开 Grbl 或重置 Grbl 时 Grbl 运行的启动块。换句话说，启动块是一行 G 代码，您可以让 Grbl 自动神奇地运行它来设置您的 G 代码模式默认值，或者您每次启动机器时需要 Grbl 执行的任何其他操作。Grbl 可以存储两个 G 代码块作为系统默认值。
 
-So, when connected to Grbl, type `$N` and then enter. Grbl should respond with something short like:
+所以，当连接到 Grbl 时，输入 `$N` 然后回车。Grbl 应该回应一些简短的内容，例如：
 ```
-$N0=
+$ N0 =
 $N1=
-ok
+行
 ```
-Not much to go on, but this just means that there is no G-code block stored in line `$N0` for Grbl to run upon startup. `$N1` is the next line to be run.
+没什么可做的，但这只是意味着没有 G 代码块存储在行 `$N0` 中供 Grbl 在启动时运行。`$N1` 是要运行的下一行。
 
-#### $Nx=line - Save startup block
+#### $Nx=line - 保存启动块
 
-**IMPORTANT: Be very careful when storing any motion (G0/1,G2/3,G28/30) commands in the startup blocks. These motion commands will run everytime you reset or power up Grbl, so if you have an emergency situation and have to e-stop and reset, a startup block move can and will likely make things worse quickly. Also, do not place any commands that save data to EEPROM, such as G10/G28.1/G30.1. This will cause Grbl to constantly re-write this data upon every startup and reset, which will eventually wear out your Arduino's EEPROM.**
+**重要提示：在启动块中存储任何运动（G0/1、G2/3、G28/30）命令时要非常小心。这些运动命令将在您每次重置或启动 Grbl 时运行，因此如果您遇到紧急情况并且必须紧急停止和重置，启动块移动可能并且可能会使情况迅速恶化。另外，不要放置任何将数据保存到 EEPROM 的命令，例如 G10/G28.1/G30.1。这将导致 Grbl 在每次启动和重置时不断重写这些数据，最终会磨损 Arduino 的 EEPROM。**
 
-**Typical usage for a startup block is simply to set your preferred modal states, such as G20 inches mode, always default to a different work coordinate system, or, to provide a way for a user to run some user-written unique feature that they need for their crazy project.**
+**启动块的典型用法只是设置您喜欢的模态状态，例如 G20 英寸模式，始终默认为不同的工作坐标系，或者，为用户提供一种方式来运行某些用户编写的独特功能他们需要他们疯狂的项目。**
 
-To set a startup block, type `$N0=` followed by a valid G-code block and an enter. Grbl will run the block to check if it's valid and then reply with an `ok` or an `error:` to tell you if it's successful or something went wrong. If there is an error, Grbl will not save it.
+要设置启动块，请键入“$N0=”，后跟有效的 G 代码块和回车。Grbl 将运行该块以检查它是否有效，然后回复一个 `ok` 或一个 `error:` 来告诉你它是成功还是出错了。如果有错误，Grbl 不会保存。
 
-For example, say that you want to use your first startup block `$N0` to set your G-code parser modes like G54 work coordinate, G20 inches mode, G17 XY-plane. You would type `$N0=G20 G54 G17` with an enter and you should see an `ok` response. You can then check if it got stored by typing `$N` and you should now see a response like `$N0=G20G54G17`.
+例如，假设您想使用第一个启动块 `$N0` 来设置 G 代码解析器模式，例如 G54 工作坐标、G20 英寸模式、G17 XY 平面。你可以输入`$N0=G20 G54 G17`并回车，你应该看到一个`ok`响应。然后，您可以通过键入“$N”来检查它是否已存储，您现在应该会看到类似“$N0=G20G54G17”的响应。
 
-Once you have a startup block stored in Grbl's EEPROM, everytime you startup or reset you will see your startup block printed back to you, starting with an open-chevron `>`, and a `:ok` response from Grbl to indicate if it ran okay. So for the previous example, you'll see:
-
-```
-Grbl 1.1d ['$' for help]
->G20G54G17:ok
+一旦您将启动块存储在 Grbl 的 EEPROM 中，每次启动或重置时，您都会看到您的启动块打印回给您，以开放的 V 形“>”开头，以及来自 Grbl 的“:ok”响应以指示它是否跑好了。因此，对于前面的示例，您将看到：
 
 ```
-If you have multiple G-code startup blocks, they will print back to you in order upon every startup. And if you'd like to clear one of the startup blocks, (e.g., block 0) type `$N0=` without anything following the equal sign.
+Grbl 1.1d ['$' 寻求帮助]
+>G20G54G17：好的
 
-NOTE: There are two variations on when startup blocks with run. First, it will not run if Grbl initializes up in an ALARM state or exits an ALARM state via an `$X` unlock for safety reasons. Always address and cancel the ALARM and then finish by a reset, where the startup blocks will run at initialization. Second, if you have homing enabled, the startup blocks will execute immediately after a successful homing cycle, not at startup.
+```
+如果您有多个 G 代码启动块，它们会在每次启动时按顺序打印给您。如果您想清除其中一个启动块，（例如，块 0），请键入 `$N0=`，不要在等号后面添加任何内容。
 
-#### `$C` - Check gcode mode
-This toggles the Grbl's gcode parser to take all incoming blocks and process them completely, as it would in normal operation, but it does not move any of the axes, ignores dwells, and powers off the spindle and coolant. This is intended as a way to provide the user a way to check how their new G-code program fares with Grbl's parser and monitor for any errors (and checks for soft limit violations, if enabled).
+注意：使用 run 启动块时有两种变体。首先，出于安全原因，如果 Grbl 在 ALARM 状态初始化或通过 `$X` 解锁退出 ALARM 状态，它将不会运行。始终寻址和取消 ALARM，然后通过复位完成，其中启动块将在初始化时运行。其次，如果您启用了归位，则启动块将在成功归位循环后立即执行，而不是在启动时执行。
 
-When toggled off, Grbl will perform an automatic soft-reset (^X). This is for two purposes. It simplifies the code management a bit. But, it also prevents users from starting a job when their G-code modes are not what they think they are. A system reset always gives the user a fresh, consistent start.
+#### `$C` - 检查 gcode 模式
+这会切换 Grbl 的 gcode 解析器以获取所有传入的块并完全处理它们，就像在正常操作中一样，但它不会移动任何轴，忽略停顿，并关闭主轴和冷却剂。这旨在为用户提供一种方法来检查他们的新 G 代码程序如何使用 Grbl 的解析器并监控任何错误（并检查软限制违规，如果启用）。
 
-#### `$X` - Kill alarm lock
-Grbl's alarm mode is a state when something has gone critically wrong, such as a hard limit or an abort during a cycle, or if Grbl doesn't know its position. By default, if you have homing enabled and power-up the Arduino, Grbl enters the alarm state, because it does not know its position. The alarm mode will lock all G-code commands until the '$H' homing cycle has been performed. Or if a user needs to override the alarm lock to move their axes off their limit switches, for example, '$X' kill alarm lock will override the locks and allow G-code functions to work again.
+关闭时，Grbl 将执行自动软复位 (^X)。这是出于两个目的。它稍微简化了代码管理。但是，当用户的 G 代码模式不是他们认为的那样时，它也会阻止用户开始工作。系统重置始终为用户提供全新、一致的开始。
 
-But, tread carefully!! This should only be used in emergency situations. The position has likely been lost, and Grbl may not be where you think it is. So, it's advised to use G91 incremental mode to make short moves. Then, perform a homing cycle or reset immediately afterwards.
+#### `$X` - 取消警报锁
+Grbl 的警报模式是出现严重错误时的状态，例如硬限制或循环中的中止，或者 Grbl 不知道其位置。默认情况下，如果您启用了归位并为 Arduino 加电，Grbl 会进入警报状态，因为它不知道自己的位置。警报模式将锁定所有 G 代码命令，直到执行“$H”归位循环。或者，如果用户需要覆盖警报锁定以将他们的轴移出限位开关，例如，“$X”终止警报锁定将覆盖锁定并允许 G 代码功能再次工作。
 
-As noted earlier, startup lines do not execute after a `$X` command. Always reset when you have cleared the alarm and fixed the scenario that caused it. When Grbl resets to idle, the startup lines will then run as normal.
+但是，请谨慎行事！！这应该只在紧急情况下使用。位置可能已经丢失，Grbl 可能不在您认为的位置。因此，建议使用 G91 增量方式进行短距离移动。然后，执行归位循环或之后立即重置。
 
-#### `$H` - Run homing cycle
-This command is the only way to perform the homing cycle in Grbl. Some other motion controllers designate a special G-code command to run a homing cycle, but this is incorrect according to the G-code standards. Homing is a completely separate command handled by the controller.
+如前所述，启动行不会在 `$X` 命令之后执行。清除警报并修复导致警报的场景后，请始终重置。当 Grbl 重置为空闲时，启动线将正常运行。
 
-TIP: After running a homing cycle, rather jogging manually all the time to a position in the middle of your workspace volume. You can set a G28 or G30 pre-defined position to be your post-homing position, closer to where you'll be machining. To set these, you'll first need to jog your machine to where you would want it to move to after homing. Type G28.1 (or G30.1) to have Grbl store that position. So then after '$H' homing, you could just enter 'G28' (or 'G30') and it'll move there auto-magically. In general, I would just move the XY axis to the center and leave the Z-axis up. This ensures that there isn't a chance the tool in the spindle will interfere and that it doesn't catch on anything.
+#### `$H` - 运行归位循环
+此命令是在 Grbl 中执行归位循环的唯一方法。其他一些运动控制器指定一个特殊的 G 代码命令来运行归位循环，但根据 G 代码标准，这是不正确的。归位是由控制器处理的完全独立的命令。
 
-#### `$Jx=line` - Run jogging motion
+提示：在运行一个归位循环之后，而不是一直手动慢跑到工作区体积中间的一个位置。您可以将 G28 或 G30 预定义位置设置为您的归位后位置，更靠近您将要加工的位置。要设置这些，您首先需要将您的机器慢跑到您希望它在归位后移动到的位置。键入 G28.1（或 G30.1）让 Grbl 存储该位置。因此，在“$H”归位后，您只需输入“G28”（或“G30”），它就会自动神奇地移动到那里。一般来说，我只会将 XY 轴移动到中心，而让 Z 轴向上。这可确保主轴中的刀具不会干扰并且不会卡住任何东西。
 
-New to Grbl v1.1, this command will execute a special jogging motion. There are three main differences between a jogging motion and a motion commanded by a g-code line. 
+#### `$Jx=line` - 运行慢跑运动
 
-- Like normal g-code commands, several jog motions may be queued into the planner buffer, but the jogging can be easily canceled by a jog-cancel or feed-hold real-time command. Grbl will immediately hold the current jog and then automatically purge the buffers of any remaining commands. 
-- Jog commands are completely independent of the g-code parser state. It will not change any modes like `G91` incremental distance mode. So, you no longer have to make sure that you change it back to `G90` absolute distance mode afterwards. This helps reduce the chance of starting with the wrong g-code modes enabled.
-- If soft-limits are enabled, any jog command that exceeds a soft-limit will simply return an error. It will not throw an alarm as it would with a normal g-code command. This allows for a much more enjoyable and fluid GUI or joystick interaction.
+Grbl v1.1 的新功能，此命令将执行特殊的点动运动。慢跑运动和由 g 代码线命令的运动之间存在三个主要区别。
 
-Executing a jog requires a specific command structure, as described below:
+- 与普通的 g 代码命令一样，多个点动运动可能会排队进入计划缓冲区，但点动可以通过点动取消或进给保持实时命令轻松取消。Grbl 将立即保持当前的点动，然后自动清除任何剩余命令的缓冲区。
+- Jog 命令完全独立于 g 代码解析器状态。它不会改变任何模式，如`G91`增量距离模式。因此，您不再需要确保之后将其改回“G90”绝对距离模式。这有助于减少以错误的 g 代码模式启动的机会。
+- 如果启用了软限制，任何超过软限制的点动命令都将简单地返回一个错误。它不会像使用普通的 g 代码命令那样发出警报。这允许更加愉快和流畅的 GUI 或操纵杆交互。
 
- - The first three characters must be '$J=' to indicate the jog.
- - The jog command follows immediate after the '=' and works like a normal G1 command.
- - Feed rate is only interpreted in G94 units per minute. A prior G93 state is ignored during jog.
- - Required words:
-   - XYZ: One or more axis words with target value.
-   - F - Feed rate value. NOTE: Each jog requires this value and is not treated as modal.
- - Optional words: Jog executes based on current G20/G21 and G90/G91 g-code parser state. If one of the following optional words is passed, that state is overridden for one command only.
-   - G20 or G21 - Inch and millimeter mode
-   - G90 or G91 - Absolute and incremental distances
-   - G53 - Move in machine coordinates
- - All other g-codes, m-codes, and value words are not accepted in the jog command.
- - Spaces and comments are allowed in the command. These are removed by the pre-parser.
+执行点动需要特定的命令结构，如下所述：
 
- - Example: G21 and G90 are active modal states prior to jogging. These are sequential commands.
-    - `$J=X10.0 Y-1.5` will move to X=10.0mm and Y=-1.5mm in work coordinate frame (WPos).
-    - `$J=G91 G20 X0.5` will move +0.5 inches (12.7mm) to X=22.7mm (WPos). Note that G91 and G20 are only applied to this jog command.
-    - `$J=G53 Y5.0` will move the machine to Y=5.0mm in the machine coordinate frame (MPos). If the work coordinate offset for the y-axis is 2.0mm, then Y is 3.0mm in (WPos).
+ - 前三个字符必须是 '$J=' 以指示点动。
+ - 点动命令紧跟在“=”之后，就像普通的 G1 命令一样工作。
+ - 进给率仅以每分钟 G94 单位解释。在点动期间忽略先前的 G93 状态。
+ - 必填词：
+   - XYZ：一个或多个具有目标值的轴字。
+   - F - 进给率值。注意：每个点动都需要此值，并且不被视为模态。
+ - 可选词：点动根据当前 G20/G21 和 G90/G91 g 代码解析器状态执行。如果传递了以下可选词之一，则仅针对一个命令覆盖该状态。
+   - G20 或 G21 - 英寸和毫米模式
+   - G90 或 G91 - 绝对和增量距离
+   - G53 - 在机器坐标中移动
+ - jog 命令不接受所有其他 g 代码、m 代码和值字。
+ - 命令中允许有空格和注释。这些由预解析器删除。
 
-Jog commands behave almost identically to normal g-code streaming. Every jog command will
-return an 'ok' when the jogging motion has been parsed and is setup for execution. If a
-command is not valid or exceeds a soft-limit, Grbl will return an 'error:'. Multiple jogging commands may be queued in sequence.
+ - 示例：G21 和 G90 是点动前的有效模态状态。这些是顺序命令。
+    - `$J=X10.0 Y-1.5` 将在工作坐标系 (WPos) 中移动到 X=10.0mm 和 Y=-1.5mm。
+    - `$J=G91 G20 X0.5` 将移动 +0.5 英寸（12.7 毫米）到 X=22.7 毫米（WPos）。注意 G91 和 G20 只适用于该点动指令。
+    - `$J=G53 Y5.0` 将机器移动到机器坐标系 (MPos) 中的 Y=5.0mm。如果 y 轴的工件坐标偏移为 2.0 毫米，则 Y 为 3.0 毫米（WPos）。
 
-NOTE: See additional jogging documentation for details on using this command to create a low-latency joystick or rotary dial interface.
+Jog 命令的行为与普通的 g 代码流几乎相同。每个点动命令都会
+当慢跑运动被解析并准备执行时返回“ok”。如果一个
+命令无效或超出软限制，Grbl 将返回“错误：”。多个点动命令可以按顺序排队。
+
+注意：有关使用此命令创建低延迟操纵杆或旋转拨号界面的详细信息，请参阅其他慢跑文档。
 
 
-#### `$RST=$`, `$RST=#`, and `$RST=*`- Restore Grbl settings and data to defaults
-These commands are not listed in the main Grbl `$` help message, but are available to allow users to restore parts of or all of Grbl's EEPROM data. Note: Grbl will automatically reset after executing one of these commands to ensure the system is initialized correctly.
+#### `$RST=$`、`$RST=#` 和 `$RST=*` - 将 Grbl 设置和数据恢复为默认值
+这些命令未列在 Grbl 的主要帮助信息中，但可用于允许用户恢复部分或全部 Grbl 的 EEPROM 数据。注意：执行这些命令之一后，Grbl 将自动重置，以确保系统正确初始化。
 
-- `$RST=$` : Erases and restores the `$$` Grbl settings back to defaults, which is defined by the default settings file used when compiling Grbl. Often OEMs will build their Grbl firmwares with their machine-specific recommended settings. This provides users and OEMs a quick way to get back to square-one, if something went awry or if a user wants to start over.
-- `$RST=#` : Erases and zeros all G54-G59 work coordinate offsets and G28/30 positions stored in EEPROM. These are generally the values seen in the `$#` parameters printout. This provides an easy way to clear these without having to do it manually for each set with a `G20 L2/20` or `G28.1/30.1` command.
-- `$RST=*` : This clears and restores all of the EEPROM data used by Grbl. This includes `$$` settings, `$#` parameters, `$N` startup lines, and `$I` build info string. Note that this doesn't wipe the entire EEPROM, only the data areas Grbl uses. To do a complete wipe, please use the Arduino IDE's EEPROM clear example project.
+- `$RST=$` : 擦除`$$` Grbl 设置并将其恢复为默认值，这是由编译 Grbl 时使用的默认设置文件定义的。通常 OEM 会使用他们特定于机器的推荐设置来构建他们的 Grbl 固件。如果出现问题或用户想重新开始，这为用户和原始设备制造商提供了一种快速恢复原状的方法。
+- `$RST=#` : 擦除和归零存储在 EEPROM 中的所有 G54-G59 工作坐标偏移和 G28/30 位置。这些通常是在`$#` 参数打印输出中看到的值。这提供了一种简单的方法来清除这些，而无需使用“G20 L2/20”或“G28.1/30.1”命令手动为每个组进行。
+- `$RST=*` : 这会清除并恢复 Grbl 使用的所有 EEPROM 数据。这包括`$$` 设置、`$#` 参数、`$N` 启动行和`$I` 构建信息字符串。请注意，这不会擦除整个 EEPROM，只会擦除 Grbl 使用的数据区域。要进行完整擦除，请使用 Arduino IDE 的 EEPROM 清除示例项目。
 
-NOTE: Some OEMs may restrict some or all of these commands to prevent certain data they use from being wiped. 
+注意：某些 OEM 可能会限制部分或全部这些命令，以防止擦除他们使用的某些数据。 
 
-#### `$SLP` - Enable Sleep Mode
+#### `$SLP` - 启用睡眠模式
 
-This command will place Grbl into a de-powered sleep state, shutting down the spindle, coolant, and stepper enable pins and block any commands. It may only be exited by a soft-reset or power-cycle. Once re-initialized, Grbl will automatically enter an ALARM state, because it's not sure where it is due to the steppers being disabled.
+此命令将使 Grbl 进入断电睡眠状态，关闭主轴、冷却剂和步进器启用引脚并阻止任何命令。它只能通过软复位或电源循环退出。一旦重新初始化，Grbl 将自动进入 ALARM 状态，因为由于步进器被禁用，它不确定它在哪里。
 
-This feature is useful if you need to automatically de-power everything at the end of a job by adding this command at the end of your g-code program, BUT, it is highly recommended that you add commands to first move your machine to a safe parking location prior to this sleep command. It also should be emphasized that you should have a reliable CNC machine that will disable everything when its supposed to, like your spindle. Grbl is not responsible for any damage it may cause. It's never a good idea to leave your machine unattended. So, use this command with the utmost caution!
+如果您需要通过在 g 代码程序的末尾添加此命令来在作业结束时自动关闭所有内容，则此功能非常有用，但是，强烈建议您添加命令以首先将您的机器移动到在此睡眠命令之前的安全停车位置。还应该强调的是，您应该拥有一台可靠的 CNC 机器，它可以在应该禁用的情况下禁用所有功能，例如您的主轴。Grbl 对其可能造成的任何损害概不负责。让您的机器无人看管从来都不是一个好主意。因此，请务必谨慎使用此命令！
 
 
 ***
 
-## Grbl v1.1 Realtime commands
+## Grbl v1.1 实时命令
 
-Realtime commands are single control characters that may be sent to Grbl to command and perform an action in real-time. This means that they can be sent at anytime, anywhere, and Grbl will immediately respond, regardless of what it is doing at the time. These commands include a reset, feed hold, resume, status report query, and overrides (in v1.1).
+实时命令是单个控制字符，可以发送到 Grbl 以实时命令和执行操作。这意味着它们可以随时随地发送，Grbl 会立即响应，不管它当时在做什么。这些命令包括重置、馈送保持、恢复、状态报告查询和覆盖（在 v1.1 中）。
 
-A realtime command:
+实时命令：
 
-- Will execute within tens of milliseconds.
+- 将在几十毫秒内执行。
 
-- Is a single character that may be sent to Grbl at any time.
+- 是可以随时发送到 Grbl 的单个字符。
 
-- Does not require a line feed or carriage return after them.
+- 在它们之后不需要换行或回车。
 
-- Is not considered a part of the streaming protocol. 
+- 不被视为流协议的一部分。 
 
-- Are intercepted when they are received and never placed in a buffer to be parsed by Grbl.
+- 在接收到时被拦截，并且永远不会被放置在缓冲区中以供 Grbl 解析。
 
-- Will ignore multiple commands until it has executed the first received command.
+- 将忽略多个命令，直到它执行了第一个接收到的命令。
 
-- May be tied to an input pin and may be operated with a button or switch.
+- 可以连接到输入引脚，可以通过按钮或开关进行操作。
 
-- Actions depends on state or what Grbl is doing. It may not do anything.
+- 行动取决于状态或 Grbl 正在做什么。它可能什么也做不了。
 
-- Descriptions explain how they work and what to expect.
+- 描述解释了它们的工作方式和预期。
 
-#### ASCII Realtime Command Descriptions
-Four realtime commands are type-able by users on a keyboard and shown in the `$` Grbl help message. These realtime command characters control some of Grbl's basic functions.
+#### ASCII 实时命令描述
+四个实时命令可由用户在键盘上键入并显示在 `$` Grbl 帮助消息中。这些实时命令字符控制 Grbl 的一些基本功能。
 
-- `0x18` (ctrl-x) : Soft-Reset
+- `0x18` (ctrl-x) : 软复位
 
-  - Immediately halts and safely resets Grbl without a power-cycle.
-  - Accepts and executes this command at any time.
-  - If reset while in motion, Grbl will throw an alarm to indicate position may be lost from the motion halt.
-  - If reset while in not motion, position is retained and re-homing is not required.
-  - An input pin is available to connect a button or switch.
-
-
-- `?` : Status Report Query
-
-  - Immediately generates and sends back runtime data with a status report.
-  - Accepts and executes this command at any time, except during a homing cycle and when critical alarm (hard/soft limit error) is thrown.
+  - 无需重启即可立即停止并安全地重置 Grbl。
+  - 随时接受并执行此命令。
+  - 如果在运动中重置，Grbl 将发出警报以指示可能因运动停止而丢失位置。
+  - 如果在静止状态下复位，位置将被保留并且不需要重新归位。
+  - 输入引脚可用于连接按钮或开关。
 
 
-- `~` : Cycle Start / Resume
+- `?` : 状态报告查询
 
-  - Resumes a feed hold, a safety door/parking state when the door is closed, and the M0 program pause states.
-  - Command is otherwise ignored.
-  - If the parking compile-time option is enabled and the safety door state is ready to resume, Grbl will re-enable the spindle and coolant, move back into position, and then resume.
-  - An input pin is available to connect a button or switch.
+  - 立即生成并发送带有状态报告的运行时数据。
+  - 随时接受并执行此命令，除非在归位循环期间和引发严重警报（硬/软限制错误）时。
+
+
+- `~` : 循环开始/恢复
+
+  - 当门关闭时恢复进给暂停、安全门/停车状态和 M0 程序暂停状态。
+  - 否则将忽略命令。
+  - 如果启用停车编译时选项并且安全门状态准备好恢复，Grbl 将重新启用主轴和冷却液，移回原位，然后恢复。
+  - 输入引脚可用于连接按钮或开关。
 
 
 - `!` : Feed Hold
 
-  - Places Grbl into a suspend or HOLD state. If in motion, the machine will decelerate to a stop and then be suspended.
-  - Command executes when Grbl is in an IDLE, RUN, or JOG state. It is otherwise ignored.
-  - If jogging, a feed hold will cancel the jog motion and flush all remaining jog motions in the planner buffer. The state will return from JOG to IDLE or DOOR, if was detected as ajar during the active hold.
-  - By machine control definition, a feed hold does not disable the spindle or coolant. Only motion.
-  - An input pin is available to connect a button or switch.
+  - 将 Grbl 置于挂起或保持状态。如果在运动，机器将减速至停止，然后暂停。
+  - 命令在 Grbl 处于 IDLE、RUN 或 JOG 状态时执行。否则将被忽略。
+  - 如果是点动，进给暂停将取消点动运动并清除计划缓冲区中所有剩余的点动运动。如果在活动保持期间检测到半开状态，状态将从 JOG 返回到 IDLE 或 DOOR。
+  - 根据机床控制定义，进给保持不会禁用主轴或冷却液。只有运动。
+  - 输入引脚可用于连接按钮或开关。
 
 
-#### Extended-ASCII Realtime Command Descriptions
+#### 扩展 ASCII 实时命令描述
 
-Grbl v1.1 installed more than a dozen new realtime commands to control feed, rapid, and spindle overrides. To help prevent users from inadvertently altering overrides with a keystroke and allow for more commands later on, all of the new control characters have been moved to the extended ASCII character set. These are not easily type-able on a keyboard, but, depending on the OS, they may be entered using specific keystroke and code. GUI developers will need to be able to send extended ASCII characters, values `128 (0x80)` to `255 (0xFF)`, to Grbl to take advantage of these new features.
+Grbl v1.1 安装了十多个新的实时命令来控制进给、快速和主轴覆盖。为帮助防止用户无意中通过击键更改覆盖并允许以后使用更多命令，所有新控制字符都已移至扩展 ASCII 字符集。这些在键盘上不容易输入，但根据操作系统的不同，可以使用特定的按键和代码输入它们。GUI 开发人员需要能够向 Grbl 发送扩展 ASCII 字符，值从“128 (0x80)”到“255 (0xFF)”，以利用这些新功能。
 
-- `0x84` : Safety Door
+- `0x84`：安全门
 
-  - Although typically connected to an input pin to detect the opening of a safety door, this command allows a GUI to enact the safety door behavior with this command.
-  - Immediately suspends into a DOOR state and disables the spindle and coolant. If in motion, the machine will decelerate to a stop and then be suspended.
-  - If executed during homing, Grbl will instead halt motion and throw a homing alarm.
-  - If already in a suspend state or HOLD, the DOOR state supersedes it.
-  - If the parking compile-time option is enabled, Grbl will park the spindle to a specified location.
-  - Command executes when Grbl is in an IDLE, HOLD, RUN, HOMING, or JOG state. It is otherwise ignored.
-  - If jogging, a safety door will cancel the jog and all queued motions in the planner buffer. When the safety door is closed and resumed, Grbl will return to an IDLE state.
-  - An input pin is available to connect a button or switch, if enabled with a compile-time option.
-  - Some builds of Grbl v0.9 used the `@` character for this command, but it was undocumented. Moved to extended-ASCII to prevent accidental commanding.
+  - 虽然通常连接到输入引脚以检测安全门的打开，但此命令允许 GUI 使用此命令制定安全门行为。
+  - 立即暂停进入 DOOR 状态并禁用主轴和冷却液。如果在运动，机器将减速至停止，然后暂停。
+  - 如果在归位期间执行，Grbl 将改为停止运动并发出归位警报。
+  - 如果已经处于挂起状态或 HOLD，则 DOOR 状态将取代它。
+  - 如果启用了parking compile-time 选项，Grbl 会将主轴停放在指定位置。
+  - 命令在 Grbl 处于 IDLE、HOLD、RUN、HOMING 或 JOG 状态时执行。否则将被忽略。
+  - 如果慢跑，安全门将取消慢跑和计划器缓冲区中的所有排队运动。当安全门关闭并恢复时，Grbl 将返回到 IDLE 状态。
+  - 如果使用编译时选项启用，则输入引脚可用于连接按钮或开关。
+  - 一些 Grbl v0.9 版本在这个命令中使用了 `@` 字符，但它没有被记录在案。移动到扩展 ASCII 以防止意外命令。
 
 
-- `0x85` : Jog Cancel
+- `0x85`：点动取消
 
-  - Immediately cancels the current jog state by a feed hold and automatically flushing any remaining jog commands in the buffer.
-  - Command is ignored, if not in a JOG state or if jog cancel is already invoked and in-process.
-  - Grbl will return to the IDLE state or the DOOR state, if the safety door was detected as ajar during the cancel.
+  - 通过进给保持立即取消当前的点动状态并自动刷新缓冲区中的任何剩余点动命令。
+  - 如果未处于 JOG 状态或已调用并在进行中，则忽略命令。
+  - 如果在取消过程中检测到安全门半开，Grbl 将返回 IDLE 状态或 DOOR 状态。
   
 
-- Feed Overrides
+- 饲料覆盖
 
-  - Immediately alters the feed override value. An active feed motion is altered within tens of milliseconds.
-  - Does not alter rapid rates, which include G0, G28, and G30, or jog motions.
-  - Feed override value can not be 10% or greater than 200%.
-  - If feed override value does not change, the command is ignored.
-  - Feed override range and increments may be changed in config.h.
-  - The commands are:
-    - `0x90` : Set 100% of programmed rate.
-    - `0x91` : Increase 10%
-    - `0x92` : Decrease 10%
-    - `0x93` : Increase 1%
-    - `0x94` : Decrease 1%
-
-
-- Rapid Overrides
-
-  - Immediately alters the rapid override value. An active rapid motion is altered within tens of milliseconds.
-  - Only effects rapid motions, which include G0, G28, and G30.
-  - If rapid override value does not change, the command is ignored.
-  - Rapid override set values may be changed in config.h.
-  - The commands are:
-    - `0x95` : Set to 100% full rapid rate.
-    - `0x96` : Set to 50% of rapid rate.
-    - `0x97` : Set to 25% of rapid rate.
+  - 立即更改进给覆盖值。主动进给运动会在几十毫秒内改变。
+  - 不改变快速速率，包括 G0、G28 和 G30，或点动运动。
+  - 进给倍率值不能为 10% 或大于 200%。
+  - 如果进给覆盖值没有改变，则该命令将被忽略。
+  - 进给覆盖范围和增量可以在 config.h 中更改。
+  - 命令是：
+    - `0x90`：设置 100% 的编程速率。
+    - `0x91` : 增加 10%
+    - `0x92`：减少 10%
+    - `0x93` : 增加 1%
+    - `0x94`：减少 1%
 
 
-- Spindle Speed Overrides
+- 快速覆盖
 
-  - Immediately alters the spindle speed override value. An active spindle speed is altered within tens of milliseconds.
-  - Override values may be changed at any time, regardless of if the spindle is enabled or disabled.
-  - Spindle override value can not be 10% or greater than 200%
-  - If spindle override value does not change, the command is ignored.
-  - Spindle override range and increments may be altered in config.h.
-  - The commands are:
-    - `0x99` : Set 100% of programmed spindle speed
-    - `0x9A` : Increase 10%
-    - `0x9B` : Decrease 10%
-    - `0x9C` : Increase 1%
-    - `0x9D` : Decrease 1%
+  - 立即更改快速倍率值。主动快速运动在几十毫秒内发生变化。
+  - 仅影响快速运动，包括 G0、G28 和 G30。
+  - 如果快速倍率值不变，则忽略该命令。
+  - 可以在 config.h 中更改快速覆盖设置值。
+  - 命令是：
+    - `0x95`：设置为 100% 全速。
+    - `0x96`：设置为快速速率的 50%。
+    - `0x97`：设置为快速速率的 25%。
 
 
-- `0x9E` : Toggle Spindle Stop
+- 主轴速度覆盖
 
-  - Toggles spindle enable or disable state immediately, but only while in the HOLD state.
-  - The command is otherwise ignored, especially while in motion. This prevents accidental disabling during a job that can either destroy the part/machine or cause personal injury. Industrial machines handle the spindle stop override similarly.
-  - When motion restarts via cycle start, the last spindle state will be restored and wait 4.0 seconds (configurable) before resuming the tool path. This ensures the user doesn't forget to turn it back on.
-  - While disabled, spindle speed override values may still be altered and will be in effect once the spindle is re-enabled.
-  - If a safety door is opened, the DOOR state will supersede the spindle stop override, where it will manage the spindle re-energizing itself upon closing the door and resuming. The prior spindle stop override state is cleared and reset.
-
-
-- `0xA0` : Toggle Flood Coolant
-
-  - Toggles flood coolant state and output pin until the next toggle or g-code command alters it.
-  - May be commanded at any time while in IDLE, RUN, or HOLD states. It is otherwise ignored.
-  - This override directly changes the coolant modal state in the g-code parser. Grbl will continue to operate normally like it received and executed an `M8` or `M9` g-code command.
-  - When `$G` g-code parser state is queried, the toggle override change will be reflected by an `M8` enabled or disabled with an `M9` or not appearing when `M7` is present.
+  - 立即改变主轴速度倍率值。活动主轴速度在几十毫秒内改变。
+  - 无论主轴是启用还是禁用，都可以随时更改覆盖值。
+  - 主轴倍率值不能为 10% 或大于 200%
+  - 如果主轴倍率值不变，则忽略该命令。
+  - 主轴倍率范围和增量可以在 config.h 中更改。
+  - 命令是：
+    - `0x99` : 设置 100% 编程主轴速度
+    - `0x9A` : 增加 10%
+    - `0x9B`：减少 10%
+    - `0x9C` : 增加 1%
+    - `0x9D`：减少 1%
 
 
-- `0xA1` : Toggle Mist Coolant
+- `0x9E`：切换主轴停止
 
-  - Enabled by `ENABLE_M7` compile-time option. Default is disabled.
-  - Toggles mist coolant state and output pin until the next toggle or g-code command alters it.
-  - May be commanded at any time while in IDLE, RUN, or HOLD states. It is otherwise ignored.
-  - This override directly changes the coolant modal state in the g-code parser. Grbl will continue to operate normally like it received and executed an `M7` or `M9` g-code command.
-  - When `$G` g-code parser state is queried, the toggle override change will be reflected by an `M7` enabled or disabled with an `M9` or not appearing when `M8` is present.
+  - 立即切换主轴启用或禁用状态，但仅限于处于 HOLD 状态时。
+  - 否则命令会被忽略，尤其是在运动中。这可以防止在工作期间意外禁用可能会损坏零件/机器或造成人身伤害。工业机器类似地处理主轴停止覆盖。
+  - 当运动通过循环启动重新开始时，将恢复上次主轴状态并等待 4.0 秒（可配置），然后再恢复刀具路径。这可确保用户不会忘记重新打开它。
+  - 禁用时，主轴速度倍率值仍可更改，并且一旦重新启用主轴就会生效。
+  - 如果安全门被打开，DOOR 状态将取代主轴停止覆盖，在关闭门并恢复时，它将管理主轴重新通电。先前的主轴停止倍率状态被清除并复位。
+
+
+- `0xA0`：切换洪水冷却剂
+
+  - 切换冷却液状态和输出引脚，直到下一个切换或 g 代码命令改变它。
+  - 可在空闲、运行或保持状态下随时发出命令。否则将被忽略。
+  - 此覆盖直接更改 g 代码解析器中的冷却剂模式状态。Grbl 将继续正常运行，就像它收到并执行了“M8”或“M9”g 代码命令一样。
+  - 当`$G` g 代码解析器状态被查询时，切换覆盖更改将通过`M8` 启用或禁用与`M9` 或当`M7` 存在时不出现来反映。
+
+
+- `0xA1`：切换雾状冷却剂
+
+  - 由`ENABLE_M7` 编译时选项启用。默认为禁用。
+  - 切换雾状冷却剂状态和输出引脚，直到下一个切换或 g 代码命令更改它。
+  - 可在空闲、运行或保持状态下随时发出命令。否则将被忽略。
+  - 此覆盖直接更改 g 代码解析器中的冷却剂模式状态。Grbl 将继续正常运行，就像它收到并执行了“M7”或“M9”g 代码命令一样。
+  - 当`$G` g 代码解析器状态被查询时，切换覆盖更改将通过`M7` 启用或禁用与`M9` 或当`M8` 存在时不出现来反映。
