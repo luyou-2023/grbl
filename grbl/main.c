@@ -1,22 +1,15 @@
 /*
-  main.c - An embedded CNC Controller with rs274/ngc (g-code) support
-  Part of Grbl
+  main.c - 支持rs274/ngc (g-code)的嵌入式CNC控制器
+  Grbl的一部分
 
   Copyright (c) 2011-2016 Sungeun K. Jeon for Gnea Research LLC
   Copyright (c) 2009-2011 Simen Svale Skogsrud
+  
+  Grbl 是自由软件：你可以在自由软件基金会的GNU 普通公共许可(GPL v3+)条款下发行，或修改它.
+  Grbl的发布是希望它能有用，但没有任何保证;甚至没有隐含的保证适销性或适合某一特定目的。
+  更多详细信息，请参阅GNU通用公共许可证。
 
-  Grbl is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  Grbl is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with Grbl.  If not, see <http://www.gnu.org/licenses/>.
+  您应该已经收到GNU通用公共许可证的副本和Grbl一起。如果没有，请参阅<http://www.gnu.org/licenses/>.
 */
 
 #include "grbl.h"
@@ -74,19 +67,19 @@ int main(void)
     sys.r_override = DEFAULT_RAPID_OVERRIDE; // 设置速度覆盖为 100%
     sys.spindle_speed_ovr = DEFAULT_SPINDLE_SPEED_OVERRIDE; // 设置主轴覆盖为 100%
 		memset(sys_probe_position,0,sizeof(sys_probe_position)); // 清空探针位置。
-    sys_probe_state = 0;
-    sys_rt_exec_state = 0;
-    sys_rt_exec_alarm = 0;
-    sys_rt_exec_motion_override = 0;
-    sys_rt_exec_accessory_override = 0;
+    sys_probe_state = 0; // 初始化探针状态
+    sys_rt_exec_state = 0; // 初始化实时执行状态
+    sys_rt_exec_alarm = 0; // 初始化实时警报状态
+    sys_rt_exec_motion_override = 0; // 初始化实时执行运动覆盖
+    sys_rt_exec_accessory_override = 0; // 初始化实时主轴或冷却覆盖
 
     // 重置Grbl主系统。
     serial_reset_read_buffer(); // 清空串口读缓冲区
     gc_init(); // 设置G代码解析器到默认状态。
-    spindle_init();
-    coolant_init();
-    limits_init();
-    probe_init();
+    spindle_init(); // 初始化主轴子系统
+    coolant_init(); // 初始化冷却子系统
+    limits_init(); // 初始化限位子系统
+    probe_init(); // 初始化对刀子系统
     plan_reset(); // 清空块缓冲区和规划器变量。
     st_reset(); // 清空步进子系统变量。
 
