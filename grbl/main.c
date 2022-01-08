@@ -22,15 +22,15 @@
 #include "grbl.h"
 
 
-// Declare system global variable structure
+// 声明系统全局变量结构体
 system_t sys;
-int32_t sys_position[N_AXIS];      // Real-time machine (aka home) position vector in steps.
-int32_t sys_probe_position[N_AXIS]; // Last probe position in machine coordinates and steps.
-volatile uint8_t sys_probe_state;   // Probing state value.  Used to coordinate the probing cycle with stepper ISR.
-volatile uint8_t sys_rt_exec_state;   // Global realtime executor bitflag variable for state management. See EXEC bitmasks.
-volatile uint8_t sys_rt_exec_alarm;   // Global realtime executor bitflag variable for setting various alarms.
-volatile uint8_t sys_rt_exec_motion_override; // Global realtime executor bitflag variable for motion-based overrides.
-volatile uint8_t sys_rt_exec_accessory_override; // Global realtime executor bitflag variable for spindle/coolant overrides.
+int32_t sys_position[N_AXIS];      // 用步数表示的实时机器（如归位）位置向量。
+int32_t sys_probe_position[N_AXIS]; // 探针在机器坐标的最后位置和步数。
+volatile uint8_t sys_probe_state;   // 对刀状态值。用于在步进中断中配合对刀周期。
+volatile uint8_t sys_rt_exec_state;   // 用于状态管理的全局实时执行器比特位标签。 请参阅执行比特位掩码。
+volatile uint8_t sys_rt_exec_alarm;   // 用于设置一系列警告的全局实时执行器比特位标签变量。
+volatile uint8_t sys_rt_exec_motion_override; // 用于基于运动的覆盖的全局执行器位标签变量。
+volatile uint8_t sys_rt_exec_accessory_override; // 用于主轴/冷却覆盖的全局实时执行器比特位标签变量。
 #ifdef DEBUG
   volatile uint8_t sys_rt_exec_debug;
 #endif
@@ -38,72 +38,68 @@ volatile uint8_t sys_rt_exec_accessory_override; // Global realtime executor bit
 
 int main(void)
 {
-  // Initialize system upon power-up.
-  serial_init();   // Setup serial baud rate and interrupts
-  settings_init(); // Load Grbl settings from EEPROM
-  stepper_init();  // Configure stepper pins and interrupt timers
-  system_init();   // Configure pinout pins and pin-change interrupt
+  // 开机后初始化系统
+  serial_init();   // 设置串口波特率和中断。
+  settings_init(); // 从EEPROM加载Grbl设置。
+  stepper_init();  // 配置步进电机引脚和中断定时器。
+  system_init();   // 配置引出引脚和引脚电平改变中断。
 
-  memset(sys_position,0,sizeof(sys_position)); // Clear machine position.
-  sei(); // Enable interrupts
+  memset(sys_position,0,sizeof(sys_position)); // 清空机器位置。
+  sei(); // 开启总中断。
 
-  // Initialize system state.
+  // 初始化系统状态
   #ifdef FORCE_INITIALIZATION_ALARM
-    // Force Grbl into an ALARM state upon a power-cycle or hard reset.
+    // 在系统上电或硬件重置时强制Grbl进入ALARM状态。
     sys.state = STATE_ALARM;
   #else
     sys.state = STATE_IDLE;
   #endif
-  
-  // Check for power-up and set system alarm if homing is enabled to force homing cycle
-  // by setting Grbl's alarm state. Alarm locks out all g-code commands, including the
-  // startup scripts, but allows access to settings and internal commands. Only a homing
-  // cycle '$H' or kill alarm locks '$X' will disable the alarm.
-  // NOTE: The startup script will run after successful completion of the homing cycle, but
-  // not after disabling the alarm locks. Prevents motion startup blocks from crashing into
-  // things uncontrollably. Very bad.
+  // 通过设置Grbl的警报状态，如果归位被启用，则上电后检查系统警报以强制进入归位周期。
+  // 警报锁定所有G代码命令，包括启动脚本，但是允许设置和内部命令。
+  // 只允许归位周期'$H'命令或解除警报'$X'命令。
+  // 注意：启动脚本将会在归位周期成功完成后执行，但是不会在解除警报后执行。
+  // 阻止运动启动块从崩溃中进入不可控的事情。那是非常糟糕的。
   #ifdef HOMING_INIT_LOCK
     if (bit_istrue(settings.flags,BITFLAG_HOMING_ENABLE)) { sys.state = STATE_ALARM; }
   #endif
 
-  // Grbl initialization loop upon power-up or a system abort. For the latter, all processes
-  // will return to this loop to be cleanly re-initialized.
+  // Grbl 在上电或系统终止后初始化循环。稍后，所有过程将会返回到这个循环进行干净地重新初始化。
   for(;;) {
 
-    // Reset system variables.
+    // 重置系统变量。
     uint8_t prior_state = sys.state;
-    memset(&sys, 0, sizeof(system_t)); // Clear system struct variable.
+    memset(&sys, 0, sizeof(system_t)); // 清空系统结构体变量。
     sys.state = prior_state;
-    sys.f_override = DEFAULT_FEED_OVERRIDE;  // Set to 100%
-    sys.r_override = DEFAULT_RAPID_OVERRIDE; // Set to 100%
-    sys.spindle_speed_ovr = DEFAULT_SPINDLE_SPEED_OVERRIDE; // Set to 100%
-		memset(sys_probe_position,0,sizeof(sys_probe_position)); // Clear probe position.
+    sys.f_override = DEFAULT_FEED_OVERRIDE;  // 设置进给覆盖 100%
+    sys.r_override = DEFAULT_RAPID_OVERRIDE; // 设置速度覆盖为 100%
+    sys.spindle_speed_ovr = DEFAULT_SPINDLE_SPEED_OVERRIDE; // 设置主轴覆盖为 100%
+		memset(sys_probe_position,0,sizeof(sys_probe_position)); // 清空探针位置。
     sys_probe_state = 0;
     sys_rt_exec_state = 0;
     sys_rt_exec_alarm = 0;
     sys_rt_exec_motion_override = 0;
     sys_rt_exec_accessory_override = 0;
 
-    // Reset Grbl primary systems.
-    serial_reset_read_buffer(); // Clear serial read buffer
-    gc_init(); // Set g-code parser to default state
+    // 重置Grbl主系统。
+    serial_reset_read_buffer(); // 清空串口读缓冲区
+    gc_init(); // 设置G代码解析器到默认状态。
     spindle_init();
     coolant_init();
     limits_init();
     probe_init();
-    plan_reset(); // Clear block buffer and planner variables
-    st_reset(); // Clear stepper subsystem variables.
+    plan_reset(); // 清空块缓冲区和规划器变量。
+    st_reset(); // 清空步进子系统变量。
 
-    // Sync cleared gcode and planner positions to current system position.
+    // 同步清空了的G代码和规划器位置到当前系统位置。
     plan_sync_position();
     gc_sync_position();
 
-    // Print welcome message. Indicates an initialization has occured at power-up or with a reset.
+    // 打印欢迎信息。通知在上电或复位时发生了初始化。
     report_init_message();
 
-    // Start Grbl main loop. Processes program inputs and executes them.
+    // 开启Grbl主循环。处理程序输入并执行他们。
     protocol_main_loop();
 
   }
-  return 0;   /* Never reached */
+  return 0;   /* 根本不会到达这里 */
 }
