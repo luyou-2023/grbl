@@ -351,11 +351,9 @@ void protocol_exec_rt_system()
     }
 
     if (rt_exec & EXEC_CYCLE_STOP) {
-      // Reinitializes the cycle plan and stepper system after a feed hold for a resume. Called by
-      // realtime command execution in the main program, ensuring that the planner re-plans safely.
-      // NOTE: Bresenham algorithm variables are still maintained through both the planner and stepper
-      // cycle reinitializations. The stepper path should continue exactly as if nothing has happened.
-      // NOTE: EXEC_CYCLE_STOP is set by the stepper subsystem when a cycle or feed hold completes.
+      // 在进给保持恢复时重新初始化循环计划和步进系统。由主程序中的实时命令执行调用，确保规划器安全地重新规划。
+      // 注：Bresenham算法变量仍然通过规划器和步进循环循环重新初始化进行维护。步进器路径应该继续，就像什么都没有发生一样。
+      // 注：EXEC_CYCLE_STOP 在一个循环或进给保持完成时被步进子系统设置。
       if ((sys.state & (STATE_HOLD|STATE_SAFETY_DOOR|STATE_SLEEP)) && !(sys.soft_limit) && !(sys.suspend & SUSPEND_JOG_CANCEL)) {
         //保持完整。设置为指示准备恢复。保持在保持或门状态，直到用户已发出恢复命令或重置。
         plan_cycle_reinitialize();
