@@ -1,6 +1,6 @@
 /*
   serial.c - 为了通过串口接收或发送字节提供底层函数
-  Part of Grbl
+  Grbl 的一部分
 
   版权所有 2011-2016 Sungeun K. Jeon for Gnea Research LLC
   版权所有 2009-2011 Simen Svale Skogsrud
