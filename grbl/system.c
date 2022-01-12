@@ -1,21 +1,15 @@
 /*
-  system.c - Handles system level commands and real-time processes
-  Part of Grbl
+  system.c - 处理系统级命令和实时进程
+  Grbl 的一部分
 
-  Copyright (c) 2014-2016 Sungeun K. Jeon for Gnea Research LLC
+  版权所有 2011-2016 Sungeun K. Jeon for Gnea Research LLC
+  版权所有 2009-2011 Simen Svale Skogsrud
+  
+  Grbl 是自由软件：你可以在自由软件基金会的GNU 普通公共许可(GPL v3+)条款下发行，或修改它。
+  Grbl的发布是希望它能有用，但没有任何保证;甚至没有隐含的保证适销性或适合某一特定目的。
+  更多详细信息，请参阅GNU通用公共许可证。
 
-  Grbl is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  Grbl is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with Grbl.  If not, see <http://www.gnu.org/licenses/>.
+  您应该已经收到GNU通用公共许可证的副本和Grbl一起。如果没有，请参阅<http://www.gnu.org/licenses/>。
 */
 
 #include "grbl.h"
@@ -23,20 +17,19 @@
 
 void system_init()
 {
-  CONTROL_DDR &= ~(CONTROL_MASK); // Configure as input pins
+  CONTROL_DDR &= ~(CONTROL_MASK); //配置为输入引脚
   #ifdef DISABLE_CONTROL_PIN_PULL_UP
-    CONTROL_PORT &= ~(CONTROL_MASK); // Normal low operation. Requires external pull-down.
+    CONTROL_PORT &= ~(CONTROL_MASK); //正常低电压运行。需要外部下拉。
   #else
-    CONTROL_PORT |= CONTROL_MASK;   // Enable internal pull-up resistors. Normal high operation.
+    CONTROL_PORT |= CONTROL_MASK;   //启用内部上拉电阻器。正常高位运行。
   #endif
-  CONTROL_PCMSK |= CONTROL_MASK;  // Enable specific pins of the Pin Change Interrupt
-  PCICR |= (1 << CONTROL_INT);   // Enable Pin Change Interrupt
+  CONTROL_PCMSK |= CONTROL_MASK;  //启用管脚更改中断的特定管脚
+  PCICR |= (1 << CONTROL_INT);   //启用引脚更改中断
 }
 
 
-// Returns control pin state as a uint8 bitfield. Each bit indicates the input pin state, where
-// triggered is 1 and not triggered is 0. Invert mask is applied. Bitfield organization is
-// defined by the CONTROL_PIN_INDEX in the header file.
+//将控制管脚状态作为uint8位字段返回。每个位表示输入引脚状态，其中触发为1，未触发为0。
+// 应用反转掩码。字段组织由头文件中的控件索引定义。
 uint8_t system_control_get_state()
 {
   uint8_t control_state = 0;
@@ -57,10 +50,9 @@ uint8_t system_control_get_state()
 }
 
 
-// Pin change interrupt for pin-out commands, i.e. cycle start, feed hold, and reset. Sets
-// only the realtime command execute variable to have the main program execute these when
-// its ready. This works exactly like the character-based realtime commands when picked off
-// directly from the incoming serial data stream.
+//引脚输出命令的引脚更改中断，即循环启动、进给保持和复位。
+// 仅设置实时执行命令变量，以便主程序在就绪时执行这些命令。
+// 这与直接从传入串行数据流中拾取的基于字符的实时命令完全相同。
 ISR(CONTROL_INT_vect)
 {
   uint8_t pin = system_control_get_state();
@@ -83,18 +75,18 @@ ISR(CONTROL_INT_vect)
 }
 
 
-// Returns if safety door is ajar(T) or closed(F), based on pin state.
+//如果安全门未关（T）或关闭（F），则根据引脚脚状态返回。
 uint8_t system_check_safety_door_ajar()
 {
   #ifdef ENABLE_SAFETY_DOOR_INPUT_PIN
     return(system_control_get_state() & CONTROL_PIN_INDEX_SAFETY_DOOR);
   #else
-    return(false); // Input pin not enabled, so just return that it's closed.
+    return(false); //输入引脚未启用，因此只需返回它已关闭。
   #endif
 }
 
 
-// Executes user startup script, if stored.
+//执行用户启动脚本（如果已存储）。
 void system_execute_startup(char *line)
 {
   uint8_t n;
@@ -112,74 +104,70 @@ void system_execute_startup(char *line)
 }
 
 
-// Directs and executes one line of formatted input from protocol_process. While mostly
-// incoming streaming g-code blocks, this also executes Grbl internal commands, such as
-// settings, initiating the homing cycle, and toggling switch states. This differs from
-// the realtime command module by being susceptible to when Grbl is ready to execute the
-// next line during a cycle, so for switches like block delete, the switch only effects
-// the lines that are processed afterward, not necessarily real-time during a cycle,
-// since there are motions already stored in the buffer. However, this 'lag' should not
-// be an issue, since these commands are not typically used during a cycle.
+//指示并执行来自protocol_进程的一行格式化输入。
+//虽然主要是传入的流式g代码块，但它也执行Grbl内部命令，如设置、启动归位循环和切换开关状态。
+//这与实时命令模块的不同之处在于，Grbl在一个周期内准备好执行下一行的时间很容易受到影响，因此对于块删除之类的开关，开关只影响随后处理的行，而不一定在一个周期内实时处理，因为缓冲区中已经存储了运动。
+//然而，这种“滞后”不应该是一个问题，因为这些命令通常不会在一个周期中使用。
 uint8_t system_execute_line(char *line)
 {
   uint8_t char_counter = 1;
-  uint8_t helper_var = 0; // Helper variable
+  uint8_t helper_var = 0; //辅助变量
   float parameter, value;
   switch( line[char_counter] ) {
-    case 0 : report_grbl_help(); break;
-    case 'J' : // Jogging
-      // Execute only if in IDLE or JOG states.
+    case 0 : report_grbl_help(); break; // 如果是空行，输出帮助信息
+    case 'J' : //点动
+      //仅当处于空闲或点动状态时执行。
       if (sys.state != STATE_IDLE && sys.state != STATE_JOG) { return(STATUS_IDLE_ERROR); }
       if(line[2] != '=') { return(STATUS_INVALID_STATEMENT); }
-      return(gc_execute_line(line)); // NOTE: $J= is ignored inside g-code parser and used to detect jog motions.
+      return(gc_execute_line(line)); //注意：$J=在g代码解析器中被忽略，并用于检测点动运动。
       break;
-    case '$': case 'G': case 'C': case 'X':
+    case '$': case 'G': case 'C': case 'X': // 这些开头的命令必须有后面的字符才有意义
       if ( line[2] != 0 ) { return(STATUS_INVALID_STATEMENT); }
       switch( line[1] ) {
-        case '$' : // Prints Grbl settings
+        case '$' : //打印Grbl设置 对应'$$'命令
           if ( sys.state & (STATE_CYCLE | STATE_HOLD) ) { return(STATUS_IDLE_ERROR); } // Block during cycle. Takes too long to print.
           else { report_grbl_settings(); }
           break;
-        case 'G' : // Prints gcode parser state
-          // TODO: Move this to realtime commands for GUIs to request this data during suspend-state.
+        case 'G' : //打印gcode解析器状态
+          //代办:将其移动到实时命令，以便GUI在挂起状态下请求此数据。
           report_gcode_modes();
           break;
-        case 'C' : // Set check g-code mode [IDLE/CHECK]
-          // Perform reset when toggling off. Check g-code mode should only work if Grbl
-          // is idle and ready, regardless of alarm locks. This is mainly to keep things
-          // simple and consistent.
+        case 'C' : 
+          // 设置检查g代码模式[空闲/检查]在关闭时执行复位。
+          // 检查g代码模式应仅在Grbl空闲且准备就绪时工作，无论报警锁如何。
+          // 这主要是为了保持事情的简单性和一致性。
           if ( sys.state == STATE_CHECK_MODE ) {
             mc_reset();
             report_feedback_message(MESSAGE_DISABLED);
           } else {
-            if (sys.state) { return(STATUS_IDLE_ERROR); } // Requires no alarm mode.
+            if (sys.state) { return(STATUS_IDLE_ERROR); } // 需要非警报模式
             sys.state = STATE_CHECK_MODE;
             report_feedback_message(MESSAGE_ENABLED);
           }
           break;
-        case 'X' : // Disable alarm lock [ALARM]
+        case 'X' : // $X 命令解除警报
           if (sys.state == STATE_ALARM) {
-            // Block if safety door is ajar.
+            // 如果安全门打开就阻止这个动作
             if (system_check_safety_door_ajar()) { return(STATUS_CHECK_DOOR); }
             report_feedback_message(MESSAGE_ALARM_UNLOCK);
             sys.state = STATE_IDLE;
-            // Don't run startup script. Prevents stored moves in startup from causing accidents.
-          } // Otherwise, no effect.
+            //不要运行启动脚本。防止启动时存储的移动导致事故。
+          } // 其他情况没影响
           break;
       }
       break;
     default :
-      // Block any system command that requires the state as IDLE/ALARM. (i.e. EEPROM, homing)
+      //阻止任何要求状态为空闲/报警的系统命令。（即EEPROM、复位）
       if ( !(sys.state == STATE_IDLE || sys.state == STATE_ALARM) ) { return(STATUS_IDLE_ERROR); }
       switch( line[1] ) {
-        case '#' : // Print Grbl NGC parameters
+        case '#' : //打印Grbl NGC参数
           if ( line[2] != 0 ) { return(STATUS_INVALID_STATEMENT); }
           else { report_ngc_parameters(); }
           break;
-        case 'H' : // Perform homing cycle [IDLE/ALARM]
+        case 'H' : // $H 命令执行归位循环 [IDLE/ALARM]
           if (bit_isfalse(settings.flags,BITFLAG_HOMING_ENABLE)) {return(STATUS_SETTING_DISABLED); }
-          if (system_check_safety_door_ajar()) { return(STATUS_CHECK_DOOR); } // Block if safety door is ajar.
-          sys.state = STATE_HOMING; // Set system state variable
+          if (system_check_safety_door_ajar()) { return(STATUS_CHECK_DOOR); } // 如果安全门打开，就不进行
+          sys.state = STATE_HOMING; //设置系统状态变量
           if (line[2] == 0) {
             mc_homing_cycle(HOMING_CYCLE_ALL);
           #ifdef HOMING_SINGLE_AXIS_COMMANDS
@@ -192,24 +180,24 @@ uint8_t system_execute_line(char *line)
               }
           #endif
           } else { return(STATUS_INVALID_STATEMENT); }
-          if (!sys.abort) {  // Execute startup scripts after successful homing.
-            sys.state = STATE_IDLE; // Set to IDLE when complete.
-            st_go_idle(); // Set steppers to the settings idle state before returning.
+          if (!sys.abort) {  //成功归位后执行启动脚本。
+            sys.state = STATE_IDLE; //完成后设置为空闲。
+            st_go_idle(); //返回前，将步进电机设置为设置空闲状态。
             if (line[2] == 0) { system_execute_startup(line); }
           }
           break;
-        case 'S' : // Puts Grbl to sleep [IDLE/ALARM]
+        case 'S' : // 使Grbl进入睡眠模式 [IDLE/ALARM]
           if ((line[2] != 'L') || (line[3] != 'P') || (line[4] != 0)) { return(STATUS_INVALID_STATEMENT); }
-          system_set_exec_state_flag(EXEC_SLEEP); // Set to execute sleep mode immediately
+          system_set_exec_state_flag(EXEC_SLEEP); //设置为立即执行睡眠模式
           break;
-        case 'I' : // Print or store build info. [IDLE/ALARM]
+        case 'I' : // 打印或储存构建信息 [IDLE/ALARM]
           if ( line[++char_counter] == 0 ) {
             settings_read_build_info(line);
             report_build_info(line);
           #ifdef ENABLE_BUILD_INFO_WRITE_COMMAND
-            } else { // Store startup line [IDLE/ALARM]
+            } else { // 储存启动脚本 [IDLE/ALARM]
               if(line[char_counter++] != '=') { return(STATUS_INVALID_STATEMENT); }
-              helper_var = char_counter; // Set helper variable as counter to start of user info line.
+              helper_var = char_counter; //将helper变量设置为用户信息行开头的计数器。
               do {
                 line[char_counter-helper_var] = line[char_counter];
               } while (line[char_counter++] != 0);
@@ -217,7 +205,7 @@ uint8_t system_execute_line(char *line)
           #endif
           }
           break;
-        case 'R' : // Restore defaults [IDLE/ALARM]
+        case 'R' : // 恢复默认值 [IDLE/ALARM]
           if ((line[2] != 'S') || (line[3] != 'T') || (line[4] != '=') || (line[6] != 0)) { return(STATUS_INVALID_STATEMENT); }
           switch (line[5]) {
             #ifdef ENABLE_RESTORE_EEPROM_DEFAULT_SETTINGS
@@ -232,10 +220,10 @@ uint8_t system_execute_line(char *line)
             default: return(STATUS_INVALID_STATEMENT);
           }
           report_feedback_message(MESSAGE_RESTORE_DEFAULTS);
-          mc_reset(); // Force reset to ensure settings are initialized correctly.
+          mc_reset(); //强制重置以确保正确初始化设置。
           break;
-        case 'N' : // Startup lines. [IDLE/ALARM]
-          if ( line[++char_counter] == 0 ) { // Print startup lines
+        case 'N' : // 启动脚本 [IDLE/ALARM]
+          if ( line[++char_counter] == 0 ) { // 打印启动行
             for (helper_var=0; helper_var < N_STARTUP_LINE; helper_var++) {
               if (!(settings_read_startup_line(helper_var, line))) {
                 report_status_message(STATUS_SETTING_READ_FAIL);
@@ -244,35 +232,35 @@ uint8_t system_execute_line(char *line)
               }
             }
             break;
-          } else { // Store startup line [IDLE Only] Prevents motion during ALARM.
-            if (sys.state != STATE_IDLE) { return(STATUS_IDLE_ERROR); } // Store only when idle.
-            helper_var = true;  // Set helper_var to flag storing method.
-            // No break. Continues into default: to read remaining command characters.
+          } else { // 储存启动行，只在 [IDLE] 时进行防止警报期间运动
+            if (sys.state != STATE_IDLE) { return(STATUS_IDLE_ERROR); } //仅在空闲时存储。
+            helper_var = true;  // 设置 helper_var 标记储存方法
+            // 不断开，继续到default:读取剩下的命令字符。
           }
-        default :  // Storing setting methods [IDLE/ALARM]
+        default :  // 储存设置方法 [IDLE/ALARM]
           if(!read_float(line, &char_counter, &parameter)) { return(STATUS_BAD_NUMBER_FORMAT); }
           if(line[char_counter++] != '=') { return(STATUS_INVALID_STATEMENT); }
-          if (helper_var) { // Store startup line
-            // Prepare sending gcode block to gcode parser by shifting all characters
-            helper_var = char_counter; // Set helper variable as counter to start of gcode block
+          if (helper_var) { //储存启动行
+            //通过移动所有字符，准备将gcode块发送到gcode解析器
+            helper_var = char_counter; //将helper变量设置为gcode块开始的计数器
             do {
               line[char_counter-helper_var] = line[char_counter];
             } while (line[char_counter++] != 0);
-            // Execute gcode block to ensure block is valid.
-            helper_var = gc_execute_line(line); // Set helper_var to returned status code.
+            //执行gcode块以确保块有效。
+            helper_var = gc_execute_line(line); //将helper_var设置为返回的状态代码。
             if (helper_var) { return(helper_var); }
             else {
-              helper_var = trunc(parameter); // Set helper_var to int value of parameter
+              helper_var = trunc(parameter); //将helper_var设置为参数的int值
               settings_store_startup_line(helper_var,line);
             }
-          } else { // Store global setting.
+          } else { //存储全局设置。
             if(!read_float(line, &char_counter, &value)) { return(STATUS_BAD_NUMBER_FORMAT); }
             if((line[char_counter] != 0) || (parameter > 255)) { return(STATUS_INVALID_STATEMENT); }
             return(settings_store_global_setting((uint8_t)parameter, value));
           }
       }
   }
-  return(STATUS_OK); // If '$' command makes it to here, then everything's ok.
+  return(STATUS_OK); //如果“$”命令到达此处，则一切正常。
 }
 
 
@@ -286,9 +274,8 @@ void system_flag_wco_change()
 }
 
 
-// Returns machine position of axis 'idx'. Must be sent a 'step' array.
-// NOTE: If motor steps and machine position are not in the same coordinate frame, this function
-//   serves as a central place to compute the transformation.
+//返回轴“idx”的机器位置。必须发送一个“步骤”数组。
+//注意：如果电机步数和机器位置不在同一坐标系中，此函数将用作计算变换的中心位置。
 float system_convert_axis_steps_to_mpos(int32_t *steps, uint8_t idx)
 {
   float pos;
@@ -317,7 +304,7 @@ void system_convert_array_steps_to_mpos(float *position, int32_t *steps)
 }
 
 
-// CoreXY calculation only. Returns x or y-axis "steps" based on CoreXY motor steps.
+//仅限CoreXY计算。基于CoreXY电机步数返回x轴或y轴“步数”。
 #ifdef COREXY
   int32_t system_convert_corexy_to_x_axis_steps(int32_t *steps)
   {
@@ -330,14 +317,14 @@ void system_convert_array_steps_to_mpos(float *position, int32_t *steps)
 #endif
 
 
-// Checks and reports if target array exceeds machine travel limits.
+//检查并报告目标阵列是否超过机器行程限制。
 uint8_t system_check_travel_limits(float *target)
 {
   uint8_t idx;
   for (idx=0; idx<N_AXIS; idx++) {
     #ifdef HOMING_FORCE_SET_ORIGIN
-      // When homing forced set origin is enabled, soft limits checks need to account for directionality.
-      // NOTE: max_travel is stored as negative
+      //启用归位强制设置原点时，软限位检查需要考虑方向性。
+      //注意：最大行程存储为负数
       if (bit_istrue(settings.homing_dir_mask,bit(idx))) {
         if (target[idx] < 0 || target[idx] > -settings.max_travel[idx]) { return(true); }
       } else {
@@ -352,7 +339,7 @@ uint8_t system_check_travel_limits(float *target)
 }
 
 
-// Special handlers for setting and clearing Grbl's real-time execution flags.
+//用于设置和清除Grbl实时执行标志的特殊处理程序。
 void system_set_exec_state_flag(uint8_t mask) {
   uint8_t sreg = SREG;
   cli();
