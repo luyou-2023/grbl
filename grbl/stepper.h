@@ -1,22 +1,15 @@
 /*
-  stepper.h - stepper motor driver: executes motion plans of planner.c using the stepper motors
-  Part of Grbl
+  stepper.h - 步进电机驱动器：使用步进电机执行planner.c的运动计划
+  Grbl的一部分
 
-  Copyright (c) 2011-2016 Sungeun K. Jeon for Gnea Research LLC
-  Copyright (c) 2009-2011 Simen Svale Skogsrud
+  版权所有 2011-2016 Sungeun K. Jeon for Gnea Research LLC
+  版权所有 2009-2011 Simen Svale Skogsrud
+  
+  Grbl 是自由软件：你可以在自由软件基金会的GNU 普通公共许可(GPL v3+)条款下发行，或修改它。
+  Grbl的发布是希望它能有用，但没有任何保证;甚至没有隐含的保证适销性或适合某一特定目的。
+  更多详细信息，请参阅GNU通用公共许可证。
 
-  Grbl is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  Grbl is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with Grbl.  If not, see <http://www.gnu.org/licenses/>.
+  您应该已经收到GNU通用公共许可证的副本和Grbl一起。如果没有，请参阅<http://www.gnu.org/licenses/>。
 */
 
 #ifndef stepper_h
@@ -26,34 +19,34 @@
   #define SEGMENT_BUFFER_SIZE 6
 #endif
 
-// Initialize and setup the stepper motor subsystem
+//初始化并设置步进电机子系统
 void stepper_init();
 
-// Enable steppers, but cycle does not start unless called by motion control or realtime command.
+//启用步进器，但除非由运动控制或实时命令调用，否则循环不会启动。
 void st_wake_up();
 
-// Immediately disables steppers
+//立即禁用步进器
 void st_go_idle();
 
-// Generate the step and direction port invert masks.
+// 生成步进和方向端口反转掩码。
 void st_generate_step_dir_invert_masks();
 
-// Reset the stepper subsystem variables
+//重置步进机子系统变量
 void st_reset();
 
-// Changes the run state of the step segment buffer to execute the special parking motion.
+//更改步进段缓冲区的运行状态以执行特殊停车动作。
 void st_parking_setup_buffer();
 
-// Restores the step segment buffer to the normal run state after a parking motion.
+//停车运动后，将步进段缓冲区恢复到正常运行状态。
 void st_parking_restore_buffer();
 
-// Reloads step segment buffer. Called continuously by realtime execution system.
+//重新加载步进段缓冲区。由实时执行系统连续调用。
 void st_prep_buffer();
 
-// Called by planner_recalculate() when the executing block is updated by the new plan.
+//当执行块由新计划更新时，由planner_recalculate（）调用。
 void st_update_plan_block_parameters();
 
-// Called by realtime status reporting if realtime rate reporting is enabled in config.h.
+//如果在配置中启用了实时速率报告，则由实时状态报告调用。H
 float st_get_realtime_rate();
 
 #endif
