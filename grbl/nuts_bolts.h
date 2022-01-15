@@ -20,21 +20,21 @@
 
 #define SOME_LARGE_VALUE 1.0E+38
 
-// Axis array index values. Must start with 0 and be continuous.
-#define N_AXIS 3 // Number of axes
-#define X_AXIS 0 // Axis indexing value.
+//轴数组索引值。必须以0开头并连续。
+#define N_AXIS 3//轴数
+#define X_AXIS 0//轴索引值。
 #define Y_AXIS 1
 #define Z_AXIS 2
 // #define A_AXIS 3
 
-// CoreXY motor assignments. DO NOT ALTER.
-// NOTE: If the A and B motor axis bindings are changed, this effects the CoreXY equations.
+//CoreXY电机赋值。不要改变。
+//注意：如果A和B电机轴绑定发生更改，则会影响Corerxy方程。
 #ifdef COREXY
- #define A_MOTOR X_AXIS // Must be X_AXIS
- #define B_MOTOR Y_AXIS // Must be Y_AXIS
+ #define A_MOTOR X_AXIS // 必须是 X_AXIS
+ #define B_MOTOR Y_AXIS // 必须是 Y_AXIS
 #endif
 
-// Conversions
+//转换
 #define MM_PER_INCH (25.40)
 #define INCH_PER_MM (0.0393701)
 #define TICKS_PER_MICROSECOND (F_CPU/1000000)
@@ -42,7 +42,7 @@
 #define DELAY_MODE_DWELL       0
 #define DELAY_MODE_SYS_SUSPEND 1
 
-// Useful macros
+//有用的宏
 #define clear_vector(a) memset(a, 0, sizeof(a))
 #define clear_vector_float(a) memset(a, 0.0, sizeof(float)*N_AXIS)
 // #define clear_vector_long(a) memset(a, 0.0, sizeof(long)*N_AXIS)
@@ -50,28 +50,26 @@
 #define min(a,b) (((a) < (b)) ? (a) : (b))
 #define isequal_position_vector(a,b) !(memcmp(a, b, sizeof(float)*N_AXIS))
 
-// Bit field and masking macros
+// 位字段和掩码宏定义
 #define bit(n) (1 << n)
 #define bit_true(x,mask) (x) |= (mask)
 #define bit_false(x,mask) (x) &= ~(mask)
 #define bit_istrue(x,mask) ((x & mask) != 0)
 #define bit_isfalse(x,mask) ((x & mask) == 0)
 
-// Read a floating point value from a string. Line points to the input buffer, char_counter
-// is the indexer pointing to the current character of the line, while float_ptr is
-// a pointer to the result variable. Returns true when it succeeds
+//从字符串中读取浮点值。行指向输入缓冲区，char_counter是指向行的当前字符的索引器，而float_ptr是指向结果变量的指针。成功时返回true
 uint8_t read_float(char *line, uint8_t *char_counter, float *float_ptr);
 
-// Non-blocking delay function used for general operation and suspend features.
+//非阻塞延迟功能用于一般操作和暂停功能。
 void delay_sec(float seconds, uint8_t mode);
 
-// Delays variable-defined milliseconds. Compiler compatibility fix for _delay_ms().
+//延迟变量定义的毫秒。_delay_ms（）的编译器兼容性修复程序。
 void delay_ms(uint16_t ms);
 
-// Delays variable-defined microseconds. Compiler compatibility fix for _delay_us().
+//延迟变量定义的微秒。_delay_us（）的编译器兼容性修复程序。
 void delay_us(uint32_t us);
 
-// Computes hypotenuse, avoiding avr-gcc's bloated version and the extra error checking.
+//计算斜边，避免avr gcc的膨胀版本和额外的错误检查。
 float hypot_f(float x, float y);
 
 float convert_delta_vector_to_unit_vector(float *vector);
