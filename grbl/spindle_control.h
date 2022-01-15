@@ -1,22 +1,15 @@
 /*
-  spindle_control.h - spindle control methods
-  Part of Grbl
+  spindle_control.h - 主轴控制模块
+  Grbl 的一部分
 
-  Copyright (c) 2012-2016 Sungeun K. Jeon for Gnea Research LLC
-  Copyright (c) 2009-2011 Simen Svale Skogsrud
+  版权所有 2011-2016 Sungeun K. Jeon for Gnea Research LLC
+  版权所有 2009-2011 Simen Svale Skogsrud
+  
+  Grbl 是自由软件：你可以在自由软件基金会的GNU 普通公共许可(GPL v3+)条款下发行，或修改它。
+  Grbl的发布是希望它能有用，但没有任何保证;甚至没有隐含的保证适销性或适合某一特定目的。
+  更多详细信息，请参阅GNU通用公共许可证。
 
-  Grbl is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  Grbl is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with Grbl.  If not, see <http://www.gnu.org/licenses/>.
+  您应该已经收到GNU通用公共许可证的副本和Grbl一起。如果没有，请参阅<http://www.gnu.org/licenses/>。
 */
 
 #ifndef spindle_control_h
@@ -25,48 +18,48 @@
 #define SPINDLE_NO_SYNC false
 #define SPINDLE_FORCE_SYNC true
 
-#define SPINDLE_STATE_DISABLE  0  // Must be zero.
+#define SPINDLE_STATE_DISABLE  0//必须是零。
 #define SPINDLE_STATE_CW       bit(0)
 #define SPINDLE_STATE_CCW      bit(1)
 
 
-// Initializes spindle pins and hardware PWM, if enabled.
+//初始化主轴销和硬件PWM（如果启用）。
 void spindle_init();
 
-// Returns current spindle output state. Overrides may alter it from programmed states.
+//返回当前主轴输出状态。覆盖可能会改变它的编程状态。
 uint8_t spindle_get_state();
 
-// Called by g-code parser when setting spindle state and requires a buffer sync.
-// Immediately sets spindle running state with direction and spindle rpm via PWM, if enabled.
-// Called by spindle_sync() after sync and parking motion/spindle stop override during restore.
+//设置主轴状态时由g代码解析器调用，需要缓冲区同步。
+//如果启用，则立即通过PWM设置主轴运行状态以及方向和主轴转速。
+//在恢复过程中同步和驻车运动/主轴停止覆盖后由spindle_sync（）调用。
 #ifdef VARIABLE_SPINDLE
 
-  // Called by g-code parser when setting spindle state and requires a buffer sync.
+//设置主轴状态时由g代码解析器调用，需要缓冲区同步。
   void spindle_sync(uint8_t state, float rpm);
 
-  // Sets spindle running state with direction, enable, and spindle PWM.
+//使用方向、启用和主轴PWM设置主轴运行状态。
   void spindle_set_state(uint8_t state, float rpm); 
   
-  // Sets spindle PWM quickly for stepper ISR. Also called by spindle_set_state().
-  // NOTE: 328p PWM register is 8-bit.
+//为步进电机ISR快速设置主轴PWM。也称为主轴设置状态（）。
+//注：328p PWM寄存器为8位。
   void spindle_set_speed(uint8_t pwm_value);
   
-  // Computes 328p-specific PWM register value for the given RPM for quick updating.
+//计算给定RPM的328p特定PWM寄存器值，以便快速更新。
   uint8_t spindle_compute_pwm_value(float rpm);
   
 #else
   
-  // Called by g-code parser when setting spindle state and requires a buffer sync.
+//设置主轴状态时由g代码解析器调用，需要缓冲区同步。
   #define spindle_sync(state, rpm) _spindle_sync(state)
   void _spindle_sync(uint8_t state);
 
-  // Sets spindle running state with direction and enable.
+//使用方向和启用设置主轴运行状态。
   #define spindle_set_state(state, rpm) _spindle_set_state(state)
   void _spindle_set_state(uint8_t state);
 
 #endif
 
-// Stop and start spindle routines. Called by all spindle routines and stepper ISR.
+//停止和启动主轴例行程序。由所有主轴例程和步进ISR调用。
 void spindle_stop();
 
 

@@ -1,5 +1,5 @@
 /*
-  stepper.h - 步进电机驱动器：使用步进电机执行planner.c的运动计划
+  stepper.c - 步进电机驱动器：使用步进电机执行planner.c的运动计划
   Grbl的一部分
 
   版权所有 2011-2016 Sungeun K. Jeon for Gnea Research LLC

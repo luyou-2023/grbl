@@ -1,52 +1,45 @@
 /*
-  spindle_control.c - spindle control methods
-  Part of Grbl
+  spindle_control.c - 主轴控制模块
+  Grbl 的一部分
 
-  Copyright (c) 2012-2017 Sungeun K. Jeon for Gnea Research LLC
-  Copyright (c) 2009-2011 Simen Svale Skogsrud
+  版权所有 2011-2016 Sungeun K. Jeon for Gnea Research LLC
+  版权所有 2009-2011 Simen Svale Skogsrud
+  
+  Grbl 是自由软件：你可以在自由软件基金会的GNU 普通公共许可(GPL v3+)条款下发行，或修改它。
+  Grbl的发布是希望它能有用，但没有任何保证;甚至没有隐含的保证适销性或适合某一特定目的。
+  更多详细信息，请参阅GNU通用公共许可证。
 
-  Grbl is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  Grbl is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with Grbl.  If not, see <http://www.gnu.org/licenses/>.
+  您应该已经收到GNU通用公共许可证的副本和Grbl一起。如果没有，请参阅<http://www.gnu.org/licenses/>。
 */
 
 #include "grbl.h"
 
 
 #ifdef VARIABLE_SPINDLE
-  static float pwm_gradient; // Precalulated value to speed up rpm to PWM conversions.
+  static float pwm_gradient; //用于加速rpm到PWM转换的预计算值。
 #endif
 
 
 void spindle_init()
 {
   #ifdef VARIABLE_SPINDLE
-    // Configure variable spindle PWM and enable pin, if requried. On the Uno, PWM and enable are
-    // combined unless configured otherwise.
-    SPINDLE_PWM_DDR |= (1<<SPINDLE_PWM_BIT); // Configure as PWM output pin.
-    SPINDLE_TCCRA_REGISTER = SPINDLE_TCCRA_INIT_MASK; // Configure PWM output compare timer
+    //如果需要，配置可变主轴PWM和启用引脚。
+    //在Uno上，PWM和enable是共用的，除非另有配置。
+    SPINDLE_PWM_DDR |= (1<<SPINDLE_PWM_BIT); //配置为PWM输出引脚。
+    SPINDLE_TCCRA_REGISTER = SPINDLE_TCCRA_INIT_MASK; //配置PWM输出比较定时器
     SPINDLE_TCCRB_REGISTER = SPINDLE_TCCRB_INIT_MASK;
     #ifdef USE_SPINDLE_DIR_AS_ENABLE_PIN
-      SPINDLE_ENABLE_DDR |= (1<<SPINDLE_ENABLE_BIT); // Configure as output pin.
+      SPINDLE_ENABLE_DDR |= (1<<SPINDLE_ENABLE_BIT); //配置为输出引脚。
     #else
       #ifndef ENABLE_DUAL_AXIS
-        SPINDLE_DIRECTION_DDR |= (1<<SPINDLE_DIRECTION_BIT); // Configure as output pin.
+        SPINDLE_DIRECTION_DDR |= (1<<SPINDLE_DIRECTION_BIT); //配置为输出引脚。
       #endif
     #endif
     pwm_gradient = SPINDLE_PWM_RANGE/(settings.rpm_max-settings.rpm_min);
   #else
-    SPINDLE_ENABLE_DDR |= (1<<SPINDLE_ENABLE_BIT); // Configure as output pin.
+    SPINDLE_ENABLE_DDR |= (1<<SPINDLE_ENABLE_BIT); //配置为输出引脚。
     #ifndef ENABLE_DUAL_AXIS
-      SPINDLE_DIRECTION_DDR |= (1<<SPINDLE_DIRECTION_BIT); // Configure as output pin.
+      SPINDLE_DIRECTION_DDR |= (1<<SPINDLE_DIRECTION_BIT); //配置为输出引脚。
     #endif
   #endif
 
@@ -58,14 +51,14 @@ uint8_t spindle_get_state()
 {
   #ifdef VARIABLE_SPINDLE
     #ifdef USE_SPINDLE_DIR_AS_ENABLE_PIN
-      // No spindle direction output pin. 
+      //没有主轴方向输出引脚。
       #ifdef INVERT_SPINDLE_ENABLE_PIN
         if (bit_isfalse(SPINDLE_ENABLE_PORT,(1<<SPINDLE_ENABLE_BIT))) { return(SPINDLE_STATE_CW); }
       #else
         if (bit_istrue(SPINDLE_ENABLE_PORT,(1<<SPINDLE_ENABLE_BIT))) { return(SPINDLE_STATE_CW); }
       #endif
     #else
-      if (SPINDLE_TCCRA_REGISTER & (1<<SPINDLE_COMB_BIT)) { // Check if PWM is enabled.
+      if (SPINDLE_TCCRA_REGISTER & (1<<SPINDLE_COMB_BIT)) { //检查PWM是否启用。
         #ifdef ENABLE_DUAL_AXIS
           return(SPINDLE_STATE_CW);
         #else
@@ -92,23 +85,23 @@ uint8_t spindle_get_state()
 }
 
 
-// Disables the spindle and sets PWM output to zero when PWM variable spindle speed is enabled.
-// Called by various main program and ISR routines. Keep routine small, fast, and efficient.
-// Called by spindle_init(), spindle_set_speed(), spindle_set_state(), and mc_reset().
+//启用PWM可变主轴转速时，禁用主轴并将PWM输出设置为零。
+//由各种主程序和ISR例程调用。保持小规模、快速、高效的运行。
+//由主轴_init（）、主轴_set_speed（）、主轴_set_state（）和mc_reset（）调用。
 void spindle_stop()
 {
   #ifdef VARIABLE_SPINDLE
-    SPINDLE_TCCRA_REGISTER &= ~(1<<SPINDLE_COMB_BIT); // Disable PWM. Output voltage is zero.
+    SPINDLE_TCCRA_REGISTER &= ~(1<<SPINDLE_COMB_BIT); //禁用PWM。输出电压为零。
     #ifdef USE_SPINDLE_DIR_AS_ENABLE_PIN
       #ifdef INVERT_SPINDLE_ENABLE_PIN
-        SPINDLE_ENABLE_PORT |= (1<<SPINDLE_ENABLE_BIT);  // Set pin to high
+        SPINDLE_ENABLE_PORT |= (1<<SPINDLE_ENABLE_BIT);  //将引脚设置为高
       #else
-        SPINDLE_ENABLE_PORT &= ~(1<<SPINDLE_ENABLE_BIT); // Set pin to low
+        SPINDLE_ENABLE_PORT &= ~(1<<SPINDLE_ENABLE_BIT); //将引脚设置为低
       #endif
     #endif
   #else
     #ifdef INVERT_SPINDLE_ENABLE_PIN
-      SPINDLE_ENABLE_PORT |= (1<<SPINDLE_ENABLE_BIT);  // Set pin to high
+      SPINDLE_ENABLE_PORT |= (1<<SPINDLE_ENABLE_BIT);  //将引脚设置为高
     #else
       SPINDLE_ENABLE_PORT &= ~(1<<SPINDLE_ENABLE_BIT); // Set pin to low
     #endif
@@ -117,16 +110,15 @@ void spindle_stop()
 
 
 #ifdef VARIABLE_SPINDLE
-  // Sets spindle speed PWM output and enable pin, if configured. Called by spindle_set_state()
-  // and stepper ISR. Keep routine small and efficient.
+  //设置主轴速度PWM输出和启用引脚（如果配置）。由spindle_set_state（）和步进ISR调用。保持小规模和高效率的运行。
   void spindle_set_speed(uint8_t pwm_value)
   {
-    SPINDLE_OCR_REGISTER = pwm_value; // Set PWM output level.
+    SPINDLE_OCR_REGISTER = pwm_value; //设置PWM输出电平。
     #ifdef SPINDLE_ENABLE_OFF_WITH_ZERO_SPEED
       if (pwm_value == SPINDLE_PWM_OFF_VALUE) {
         spindle_stop();
       } else {
-        SPINDLE_TCCRA_REGISTER |= (1<<SPINDLE_COMB_BIT); // Ensure PWM output is enabled.
+        SPINDLE_TCCRA_REGISTER |= (1<<SPINDLE_COMB_BIT); //确保PWM输出已启用。
         #ifdef INVERT_SPINDLE_ENABLE_PIN
           SPINDLE_ENABLE_PORT &= ~(1<<SPINDLE_ENABLE_BIT);
         #else
@@ -135,9 +127,9 @@ void spindle_stop()
       }
     #else
       if (pwm_value == SPINDLE_PWM_OFF_VALUE) {
-        SPINDLE_TCCRA_REGISTER &= ~(1<<SPINDLE_COMB_BIT); // Disable PWM. Output voltage is zero.
+        SPINDLE_TCCRA_REGISTER &= ~(1<<SPINDLE_COMB_BIT); //禁用PWM。输出电压为零。
       } else {
-        SPINDLE_TCCRA_REGISTER |= (1<<SPINDLE_COMB_BIT); // Ensure PWM output is enabled.
+        SPINDLE_TCCRA_REGISTER |= (1<<SPINDLE_COMB_BIT); //确保PWM输出已启用。
       }
     #endif
   }
@@ -145,24 +137,23 @@ void spindle_stop()
 
   #ifdef ENABLE_PIECEWISE_LINEAR_SPINDLE
   
-    // Called by spindle_set_state() and step segment generator. Keep routine small and efficient.
-    uint8_t spindle_compute_pwm_value(float rpm) // 328p PWM register is 8-bit.
+    // 由spindle_set_state和步进段生成器调用。 保持小规模和高效率的运行。
+    uint8_t spindle_compute_pwm_value(float rpm) //328p PWM寄存器为8位。
     {
       uint8_t pwm_value;
-      rpm *= (0.010*sys.spindle_speed_ovr); // Scale by spindle speed override value.
-      // Calculate PWM register value based on rpm max/min settings and programmed rpm.
+      rpm *= (0.010*sys.spindle_speed_ovr); //按主轴速度覆盖值缩放。根据rpm最大/最小设置和编程rpm计算PWM寄存器值。
       if ((settings.rpm_min >= settings.rpm_max) || (rpm >= RPM_MAX)) {
         rpm = RPM_MAX;
         pwm_value = SPINDLE_PWM_MAX_VALUE;
       } else if (rpm <= RPM_MIN) {
-        if (rpm == 0.0) { // S0 disables spindle
+        if (rpm == 0.0) { //S0禁用主轴
           pwm_value = SPINDLE_PWM_OFF_VALUE;
         } else {
           rpm = RPM_MIN;
           pwm_value = SPINDLE_PWM_MIN_VALUE;
         }
       } else {
-        // Compute intermediate PWM value with linear spindle speed model via piecewise linear fit model.
+        //通过分段线性拟合模型，利用线性主轴转速模型计算中间PWM值。
         #if (N_PIECES > 3)
           if (rpm > RPM_POINT34) {
             pwm_value = floor(RPM_LINE_A4*rpm - RPM_LINE_B4);
@@ -188,27 +179,26 @@ void spindle_stop()
     
   #else 
   
-    // Called by spindle_set_state() and step segment generator. Keep routine small and efficient.
-    uint8_t spindle_compute_pwm_value(float rpm) // 328p PWM register is 8-bit.
+    //由spindle_set_state和步进段生成器调用。保持小规模和高效率的运行。
+    uint8_t spindle_compute_pwm_value(float rpm) //328p PWM寄存器为8位。
     {
       uint8_t pwm_value;
-      rpm *= (0.010*sys.spindle_speed_ovr); // Scale by spindle speed override value.
-      // Calculate PWM register value based on rpm max/min settings and programmed rpm.
+      rpm *= (0.010*sys.spindle_speed_ovr); //按主轴速度覆盖值缩放。根据rpm最大/最小设置和编程rpm计算PWM寄存器值。
       if ((settings.rpm_min >= settings.rpm_max) || (rpm >= settings.rpm_max)) {
-        // No PWM range possible. Set simple on/off spindle control pin state.
+        //不可能有PWM范围。设置简单的开/关主轴控制引脚状态。
         sys.spindle_speed = settings.rpm_max;
         pwm_value = SPINDLE_PWM_MAX_VALUE;
       } else if (rpm <= settings.rpm_min) {
-        if (rpm == 0.0) { // S0 disables spindle
+        if (rpm == 0.0) { //S0禁用主轴
           sys.spindle_speed = 0.0;
           pwm_value = SPINDLE_PWM_OFF_VALUE;
-        } else { // Set minimum PWM output
+        } else { //设置最小PWM输出
           sys.spindle_speed = settings.rpm_min;
           pwm_value = SPINDLE_PWM_MIN_VALUE;
         }
       } else { 
-        // Compute intermediate PWM value with linear spindle speed model.
-        // NOTE: A nonlinear model could be installed here, if required, but keep it VERY light-weight.
+        //使用线性主轴转速模型计算中间PWM值。
+        //注：如果需要，可以在此处安装非线性模型，但要保持非常轻量。
         sys.spindle_speed = rpm;
         pwm_value = floor((rpm-settings.rpm_min)*pwm_gradient) + SPINDLE_PWM_MIN_VALUE;
       }
@@ -219,18 +209,17 @@ void spindle_stop()
 #endif
 
 
-// Immediately sets spindle running state with direction and spindle rpm via PWM, if enabled.
-// Called by g-code parser spindle_sync(), parking retract and restore, g-code program end,
-// sleep, and spindle stop override.
+//如果启用，则立即通过PWM设置主轴运行状态以及方向和主轴转速。
+//由g-code解析器spindle_sync（）调用、驻车收回和恢复、g-code程序结束、睡眠和主轴停止覆盖。
 #ifdef VARIABLE_SPINDLE
   void spindle_set_state(uint8_t state, float rpm)
 #else
   void _spindle_set_state(uint8_t state)
 #endif
 {
-  if (sys.abort) { return; } // Block during abort.
+  if (sys.abort) { return; } //在中止期间阻塞。
 
-  if (state == SPINDLE_DISABLE) { // Halt or set spindle direction and rpm.
+  if (state == SPINDLE_DISABLE) { //停止或设置主轴方向和转速。
   
     #ifdef VARIABLE_SPINDLE
       sys.spindle_speed = 0.0;
@@ -248,16 +237,15 @@ void spindle_stop()
     #endif
   
     #ifdef VARIABLE_SPINDLE
-      // NOTE: Assumes all calls to this function is when Grbl is not moving or must remain off.
+      //注意：假设对该函数的所有调用都是在Grbl未移动或必须保持关闭的情况下进行的。
       if (settings.flags & BITFLAG_LASER_MODE) { 
-        if (state == SPINDLE_ENABLE_CCW) { rpm = 0.0; } // TODO: May need to be rpm_min*(100/MAX_SPINDLE_SPEED_OVERRIDE);
+        if (state == SPINDLE_ENABLE_CCW) { rpm = 0.0; } //TODO:可能需要为rpm_min*（100/MAX_SPINDLE_SPEED_OVERRIDE）；
       }
       spindle_set_speed(spindle_compute_pwm_value(rpm));
     #endif
     #if (defined(USE_SPINDLE_DIR_AS_ENABLE_PIN) && \
         !defined(SPINDLE_ENABLE_OFF_WITH_ZERO_SPEED)) || !defined(VARIABLE_SPINDLE)
-      // NOTE: Without variable spindle, the enable bit should just turn on or off, regardless
-      // if the spindle speed value is zero, as its ignored anyhow.
+      //注意：在没有可变主轴的情况下，启用位应仅打开或关闭，无论主轴速度值是否为零，因为其无论如何都会被忽略。
       #ifdef INVERT_SPINDLE_ENABLE_PIN
         SPINDLE_ENABLE_PORT &= ~(1<<SPINDLE_ENABLE_BIT);
       #else
@@ -267,24 +255,23 @@ void spindle_stop()
   
   }
   
-  sys.report_ovr_counter = 0; // Set to report change immediately
+  sys.report_ovr_counter = 0; //设置为立即报告更改
 }
 
 
-// G-code parser entry-point for setting spindle state. Forces a planner buffer sync and bails 
-// if an abort or check-mode is active.
+//用于设置主轴状态的G代码解析器入口点。如果中止或检查模式处于活动状态，则强制规划器缓冲区同步并停止。
 #ifdef VARIABLE_SPINDLE
   void spindle_sync(uint8_t state, float rpm)
   {
     if (sys.state == STATE_CHECK_MODE) { return; }
-    protocol_buffer_synchronize(); // Empty planner buffer to ensure spindle is set when programmed.
+    protocol_buffer_synchronize(); //清空规划器缓冲区，以确保编程时设置主轴。
     spindle_set_state(state,rpm);
   }
 #else
   void _spindle_sync(uint8_t state)
   {
     if (sys.state == STATE_CHECK_MODE) { return; }
-    protocol_buffer_synchronize(); // Empty planner buffer to ensure spindle is set when programmed.
+    protocol_buffer_synchronize(); //清空规划器缓冲区，以确保编程时设置主轴。
     _spindle_set_state(state);
   }
 #endif
