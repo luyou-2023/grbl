@@ -1,5 +1,5 @@
 /*
-  report.c - reporting and messaging methods
+  report.c - 报告和消息传递方法
    Grbl的一部分
 
   版权所有 2011-2016 Sungeun K. Jeon for Gnea Research LLC
@@ -23,7 +23,7 @@
 #include "grbl.h"
 
 
-// Internal report utilities to reduce flash with repetitive tasks turned into functions.
+//内部报告实用程序可减少flash，将重复性任务转化为功能。
 void report_util_setting_prefix(uint8_t n) { serial_write('$'); print_uint8_base10(n); serial_write('='); }
 static void report_util_line_feed() { printPgmString(PSTR("\r\n")); }
 static void report_util_feedback_line_feed() { serial_write(']'); report_util_line_feed(); }
@@ -97,12 +97,12 @@ static void report_util_float_setting(uint8_t n, float val, uint8_t n_decimal) {
 }
 
 
-// Handles the primary confirmation protocol response for streaming interfaces and human-feedback.
-// For every incoming line, this method responds with an 'ok' for a successful command or an
-// 'error:'  to indicate some error event with the line or some critical system error during
-// operation. Errors events can originate from the g-code parser, settings module, or asynchronously
-// from a critical error, such as a triggered hard limit. Interface should always monitor for these
-// responses.
+//处理流式接口和人工反馈的主要确认协议响应。
+//对于每一条输入线，此方法都会对成功的命令或命令进行“ok”响应
+//“error:”用于指示线路发生的某个错误事件或在运行期间发生的某个关键系统错误
+//活动错误事件可以源于g代码解析器、设置模块或异步
+//来自严重错误，例如触发的硬限制。接口应始终监视这些
+//响应。
 void report_status_message(uint8_t status_code)
 {
   switch(status_code) {
@@ -115,20 +115,18 @@ void report_status_message(uint8_t status_code)
   }
 }
 
-// Prints alarm messages.
+//打印报警信息。
 void report_alarm_message(uint8_t alarm_code)
 {
   printPgmString(PSTR("ALARM:"));
   print_uint8_base10(alarm_code);
   report_util_line_feed();
-  delay_ms(500); // Force delay to ensure message clears serial write buffer.
+  delay_ms(500); //强制延迟以确保消息清除串行写入缓冲区。
 }
 
-// Prints feedback messages. This serves as a centralized method to provide additional
-// user feedback for things that are not of the status/alarm message protocol. These are
-// messages such as setup warnings, switch toggling, and how to exit alarms.
-// NOTE: For interfaces, messages are always placed within brackets. And if silent mode
-// is installed, the message number codes are less than zero.
+//打印反馈信息。这是一种集中的方法，用于为不属于状态/报警消息协议的内容提供额外的用户反馈。
+//这些消息包括设置警告、开关切换以及如何退出警报。
+//注意：对于接口，消息总是放在括号内。如果安装了静默模式，则消息编号代码小于零。
 void report_feedback_message(uint8_t message_code)
 {
   printPgmString(PSTR("[MSG:"));
@@ -160,22 +158,22 @@ void report_feedback_message(uint8_t message_code)
 }
 
 
-// Welcome message
+//欢迎辞
 void report_init_message()
 {
   printPgmString(PSTR("\r\nGrbl " GRBL_VERSION " ['$' for help]\r\n"));
 }
 
-// Grbl help message
+//Grbl帮助消息
 void report_grbl_help() {
   printPgmString(PSTR("[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $SLP $C $X $H ~ ! ? ctrl-x]\r\n"));    
 }
 
 
-// Grbl global settings print out.
-// NOTE: The numbering scheme here must correlate to storing in settings.c
+//Grbl全局设置打印输出。
+//注：此处的编号方案必须与存储在settings.c中相关
 void report_grbl_settings() {
-  // Print Grbl settings.
+  //打印Grbl设置。
   report_util_uint8_setting(0,settings.pulse_microseconds);
   report_util_uint8_setting(1,settings.stepper_idle_lock_time);
   report_util_uint8_setting(2,settings.step_invert_mask);
@@ -202,7 +200,7 @@ void report_grbl_settings() {
   #else
     report_util_uint8_setting(32,0);
   #endif
-  // Print axis settings
+  //打印轴设置
   uint8_t idx, set_idx;
   uint8_t val = AXIS_SETTINGS_START_VAL;
   for (set_idx=0; set_idx<AXIS_N_SETTINGS; set_idx++) {
@@ -219,12 +217,11 @@ void report_grbl_settings() {
 }
 
 
-// Prints current probe parameters. Upon a probe command, these parameters are updated upon a
-// successful probe or upon a failed probe with the G38.3 without errors command (if supported).
-// These values are retained until Grbl is power-cycled, whereby they will be re-zeroed.
+//打印当前探针参数。在执行探测命令时，这些参数将在探测成功或探测失败时使用G38.3 无错误命令（如果支持）进行更新。
+//这些值将一直保留，直到Grbl通电，从而重新归零。
 void report_probe_parameters()
 {
-  // Report in terms of machine position.
+  //根据机器位置进行报告。
   printPgmString(PSTR("[PRB:"));
   float print_position[N_AXIS];
   system_convert_array_steps_to_mpos(print_position,sys_probe_position);
@@ -235,7 +232,7 @@ void report_probe_parameters()
 }
 
 
-// Prints Grbl NGC parameters (coordinate offsets, probing)
+//打印Grbl NGC参数（坐标偏移、探测）
 void report_ngc_parameters()
 {
   float coord_data[N_AXIS];
@@ -255,17 +252,17 @@ void report_ngc_parameters()
     report_util_axis_values(coord_data);
     report_util_feedback_line_feed();
   }
-  printPgmString(PSTR("[G92:")); // Print G92,G92.1 which are not persistent in memory
+  printPgmString(PSTR("[G92:")); //打印G92，G92.1在内存中不是持久的
   report_util_axis_values(gc_state.coord_offset);
   report_util_feedback_line_feed();
-  printPgmString(PSTR("[TLO:")); // Print tool length offset value
+  printPgmString(PSTR("[TLO:")); //打印刀具长度偏移值
   printFloat_CoordValue(gc_state.tool_length_offset);
   report_util_feedback_line_feed();
-  report_probe_parameters(); // Print probe parameters. Not persistent in memory.
+  report_probe_parameters(); //打印探针参数。在内存中不持久。
 }
 
 
-// Print current gcode parser mode state
+//打印当前gcode解析器模式状态
 void report_gcode_modes()
 {
   printPgmString(PSTR("[GC:G"));
@@ -342,7 +339,7 @@ void report_gcode_modes()
   report_util_feedback_line_feed();
 }
 
-// Prints specified startup line
+//打印指定的启动行
 void report_startup_line(uint8_t n, char *line)
 {
   printPgmString(PSTR("$N"));
@@ -360,13 +357,13 @@ void report_execute_startup_message(char *line, uint8_t status_code)
   report_status_message(status_code);
 }
 
-// Prints build info line
+//打印生成信息行
 void report_build_info(char *line)
 {
   printPgmString(PSTR("[VER:" GRBL_VERSION "." GRBL_VERSION_BUILD ":"));
   printString(line);
   report_util_feedback_line_feed();
-  printPgmString(PSTR("[OPT:")); // Generate compile-time build option list
+  printPgmString(PSTR("[OPT:")); //生成编译时生成选项列表
   #ifdef VARIABLE_SPINDLE
     serial_write('V');
   #endif
@@ -412,28 +409,28 @@ void report_build_info(char *line)
   #ifdef ENABLE_SAFETY_DOOR_INPUT_PIN
     serial_write('+');
   #endif  
-  #ifndef ENABLE_RESTORE_EEPROM_WIPE_ALL // NOTE: Shown when disabled.
+  #ifndef ENABLE_RESTORE_EEPROM_WIPE_ALL //注意：禁用时显示。
     serial_write('*');
   #endif
-  #ifndef ENABLE_RESTORE_EEPROM_DEFAULT_SETTINGS // NOTE: Shown when disabled.
+  #ifndef ENABLE_RESTORE_EEPROM_DEFAULT_SETTINGS //注意：禁用时显示。
     serial_write('$');
   #endif
-  #ifndef ENABLE_RESTORE_EEPROM_CLEAR_PARAMETERS // NOTE: Shown when disabled.
+  #ifndef ENABLE_RESTORE_EEPROM_CLEAR_PARAMETERS //注意：禁用时显示。
     serial_write('#');
   #endif
-  #ifndef ENABLE_BUILD_INFO_WRITE_COMMAND // NOTE: Shown when disabled.
+  #ifndef ENABLE_BUILD_INFO_WRITE_COMMAND //注意：禁用时显示。
     serial_write('I');
   #endif
-  #ifndef FORCE_BUFFER_SYNC_DURING_EEPROM_WRITE // NOTE: Shown when disabled.
+  #ifndef FORCE_BUFFER_SYNC_DURING_EEPROM_WRITE //注意：禁用时显示。
     serial_write('E');
   #endif
-  #ifndef FORCE_BUFFER_SYNC_DURING_WCO_CHANGE // NOTE: Shown when disabled.
+  #ifndef FORCE_BUFFER_SYNC_DURING_WCO_CHANGE //注意：禁用时显示。
     serial_write('W');
   #endif
   #ifdef ENABLE_DUAL_AXIS
     serial_write('2');
   #endif
-  // NOTE: Compiled values, like override increments/max/min values, may be added at some point later.
+  //注意：编译后的值，如覆盖增量/最大/最小值，可能会在以后的某个时间添加。
   serial_write(',');
   print_uint8_base10(BLOCK_BUFFER_SIZE-1);
   serial_write(',');
@@ -443,8 +440,7 @@ void report_build_info(char *line)
 }
 
 
-// Prints the character string line Grbl has received from the user, which has been pre-parsed,
-// and has been sent into protocol_execute_line() routine to be executed by Grbl.
+//打印Grbl从用户处收到的字符串行，该字符串行已预解析，并已发送到protocol_execute_line例程中，由Grbl执行。
 void report_echo_line_received(char *line)
 {
   printPgmString(PSTR("[echo: ")); printString(line);
@@ -452,20 +448,18 @@ void report_echo_line_received(char *line)
 }
 
 
- // Prints real-time data. This function grabs a real-time snapshot of the stepper subprogram
- // and the actual location of the CNC machine. Users may change the following function to their
- // specific needs, but the desired real-time data report must be as short as possible. This is
- // requires as it minimizes the computational overhead and allows grbl to keep running smoothly,
- // especially during g-code programs with fast, short line segments and high frequency reports (5-20Hz).
+ //打印实时数据。此函数获取步进子程序的实时快照和数控机床的实际位置。
+ //用户可以根据自己的具体需要更改以下功能，但所需的实时数据报告必须尽可能短。
+ //这是必需的，因为它将计算开销降至最低，并允许grbl保持平稳运行，特别是在具有快速、短线段和高频报告（5-20Hz）的g代码程序期间。
 void report_realtime_status()
 {
   uint8_t idx;
-  int32_t current_position[N_AXIS]; // Copy current state of the system position variable
+  int32_t current_position[N_AXIS]; //复制系统位置变量的当前状态
   memcpy(current_position,sys_position,sizeof(sys_position));
   float print_position[N_AXIS];
   system_convert_array_steps_to_mpos(print_position,current_position);
 
-  // Report current machine state and sub-states
+  //报告当前机器状态和子状态
   serial_write('<');
   switch (sys.state) {
     case STATE_IDLE: printPgmString(PSTR("Idle")); break;
@@ -473,10 +467,10 @@ void report_realtime_status()
     case STATE_HOLD:
       if (!(sys.suspend & SUSPEND_JOG_CANCEL)) {
         printPgmString(PSTR("Hold:"));
-        if (sys.suspend & SUSPEND_HOLD_COMPLETE) { serial_write('0'); } // Ready to resume
-        else { serial_write('1'); } // Actively holding
+        if (sys.suspend & SUSPEND_HOLD_COMPLETE) { serial_write('0'); } //准备好恢复
+        else { serial_write('1'); } // 激活保持
         break;
-      } // Continues to print jog state during jog cancel.
+      } //在点动取消期间继续打印点动状态。
     case STATE_JOG: printPgmString(PSTR("Jog")); break;
     case STATE_HOMING: printPgmString(PSTR("Home")); break;
     case STATE_ALARM: printPgmString(PSTR("Alarm")); break;
@@ -484,16 +478,16 @@ void report_realtime_status()
     case STATE_SAFETY_DOOR:
       printPgmString(PSTR("Door:"));
       if (sys.suspend & SUSPEND_INITIATE_RESTORE) {
-        serial_write('3'); // Restoring
+        serial_write('3'); //恢复
       } else {
         if (sys.suspend & SUSPEND_RETRACT_COMPLETE) {
           if (sys.suspend & SUSPEND_SAFETY_DOOR_AJAR) {
-            serial_write('1'); // Door ajar
+            serial_write('1'); // 门打开
           } else {
             serial_write('0');
-          } // Door closed and ready to resume
+          } //门关上，准备恢复
         } else {
-          serial_write('2'); // Retracting
+          serial_write('2'); //收回
         }
       }
       break;
@@ -504,7 +498,7 @@ void report_realtime_status()
   if (bit_isfalse(settings.status_report_mask,BITFLAG_RT_STATUS_POSITION_TYPE) ||
       (sys.report_wco_counter == 0) ) {
     for (idx=0; idx< N_AXIS; idx++) {
-      // Apply work coordinate offsets and tool length offset to current position.
+      //将工作坐标偏移和刀具长度偏移应用到当前位置。
       wco[idx] = gc_state.coord_system[idx]+gc_state.coord_offset[idx];
       if (idx == TOOL_LENGTH_OFFSET_AXIS) { wco[idx] += gc_state.tool_length_offset; }
       if (bit_isfalse(settings.status_report_mask,BITFLAG_RT_STATUS_POSITION_TYPE)) {
@@ -513,7 +507,7 @@ void report_realtime_status()
     }
   }
 
-  // Report machine position
+  //报告机器位置
   if (bit_istrue(settings.status_report_mask,BITFLAG_RT_STATUS_POSITION_TYPE)) {
     printPgmString(PSTR("|MPos:"));
   } else {
@@ -521,7 +515,7 @@ void report_realtime_status()
   }
   report_util_axis_values(print_position);
 
-  // Returns planner and serial read buffer states.
+  //返回计划器和串行读取缓冲区状态。
   #ifdef REPORT_FIELD_BUFFER_STATE
     if (bit_istrue(settings.status_report_mask,BITFLAG_RT_STATUS_BUFFER_STATE)) {
       printPgmString(PSTR("|Bf:"));
@@ -533,7 +527,7 @@ void report_realtime_status()
 
   #ifdef USE_LINE_NUMBERS
     #ifdef REPORT_FIELD_LINE_NUMBERS
-      // Report current line number
+      //报告当前行号
       plan_block_t * cur_block = plan_get_current_block();
       if (cur_block != NULL) {
         uint32_t ln = cur_block->line_number;
@@ -545,7 +539,7 @@ void report_realtime_status()
     #endif
   #endif
 
-  // Report realtime feed speed
+  //报告实时进给速度
   #ifdef REPORT_FIELD_CURRENT_FEED_SPEED
     #ifdef VARIABLE_SPINDLE
       printPgmString(PSTR("|FS:"));

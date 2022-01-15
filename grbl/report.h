@@ -14,7 +14,7 @@
 #ifndef report_h
 #define report_h
 
-// Define Grbl status codes. Valid values (0-255)
+//定义Grbl状态代码。有效值（0-255）
 #define STATUS_OK 0
 #define STATUS_EXPECTED_COMMAND_LETTER 1
 #define STATUS_BAD_NUMBER_FORMAT 2
@@ -54,7 +54,7 @@
 #define STATUS_GCODE_G43_DYNAMIC_AXIS_ERROR 37
 #define STATUS_GCODE_MAX_VALUE_EXCEEDED 38
 
-// Define Grbl alarm codes. Valid values (1-255). 0 is reserved.
+//定义Grbl报警代码。有效值（1-255）。0是保留的。
 #define ALARM_HARD_LIMIT_ERROR      EXEC_ALARM_HARD_LIMIT
 #define ALARM_SOFT_LIMIT_ERROR      EXEC_ALARM_SOFT_LIMIT
 #define ALARM_ABORT_CYCLE           EXEC_ALARM_ABORT_CYCLE
@@ -65,7 +65,7 @@
 #define ALARM_HOMING_FAIL_PULLOFF   EXEC_ALARM_HOMING_FAIL_PULLOFF
 #define ALARM_HOMING_FAIL_APPROACH  EXEC_ALARM_HOMING_FAIL_APPROACH
 
-// Define Grbl feedback message codes. Valid values (0-255).
+//定义Grbl反馈消息代码。有效值（0-255）。
 #define MESSAGE_CRITICAL_EVENT 1
 #define MESSAGE_ALARM_LOCK 2
 #define MESSAGE_ALARM_UNLOCK 3
@@ -78,44 +78,44 @@
 #define MESSAGE_SPINDLE_RESTORE 10
 #define MESSAGE_SLEEP_MODE 11
 
-// Prints system status messages.
+//打印系统状态消息。
 void report_status_message(uint8_t status_code);
 
-// Prints system alarm messages.
+//打印系统报警信息。
 void report_alarm_message(uint8_t alarm_code);
 
-// Prints miscellaneous feedback messages.
+//打印各种反馈信息。
 void report_feedback_message(uint8_t message_code);
 
-// Prints welcome message
+//打印欢迎信息
 void report_init_message();
 
-// Prints Grbl help and current global settings
+//打印Grbl帮助和当前全局设置
 void report_grbl_help();
 
-// Prints Grbl global settings
+//打印Grbl全局设置
 void report_grbl_settings();
 
-// Prints an echo of the pre-parsed line received right before execution.
+//打印在执行之前收到的预解析行的回显。
 void report_echo_line_received(char *line);
 
-// Prints realtime status report
+//打印实时状态报告
 void report_realtime_status();
 
-// Prints recorded probe position
+//打印记录的探针位置
 void report_probe_parameters();
 
-// Prints Grbl NGC parameters (coordinate offsets, probe)
+//打印Grbl NGC参数（坐标偏移、探头）
 void report_ngc_parameters();
 
-// Prints current g-code parser mode state
+//打印当前g代码解析器模式状态
 void report_gcode_modes();
 
-// Prints startup line when requested and executed.
+//在请求和执行时打印启动行。
 void report_startup_line(uint8_t n, char *line);
 void report_execute_startup_message(char *line, uint8_t status_code);
 
-// Prints build info and user info
+//打印生成信息和用户信息
 void report_build_info(char *line);
 
 #ifdef DEBUG
