@@ -104,7 +104,7 @@
 //这里只针对需要在两轴和三轴机器之间切换的用户。这实际上是非常罕见的。
 //如果你有一个双轴机器，不要使用这个。相反，只需改变两个轴的归零周期即可。
 
-// #define HOMING_SINGLE_AXIS_COMMANDS // Default disabled. Uncomment to enable.
+// #define HOMING_SINGLE_AXIS_COMMANDS // 默认禁用。取消注释以启用.
 
 //归零后，Grbl将默认将整个机器空间设置为负空间，这是专业CNC机器的典型情况，无论限位开关位于何处。
 //取消对该定义的注释，以强制Grbl始终将机器原点设置在原点位置，而不管开关方向如何。
@@ -188,7 +188,7 @@
 //这是为了使新用户开始使用Grbl尽可能简单。启用归位且用户已安装限位开关时，Grbl将在报警状态下启动，以指示
 //Grbl不知道它的位置，因此无法在继续之前强制用户归位。这一选择迫使无论是否归位，Grbl始终初始化为报警状态。
 //此选项更适合OEM和LinuxCNC用户希望这种功率循环行为。
-// #define FORCE_INITIALIZATION_ALARM // Default disabled. Uncomment to enable.
+// #define FORCE_INITIALIZATION_ALARM // 默认禁用。取消注释以启用.
 
 //通电或复位时，Grbl将检查限位开关状态，以确保它们在初始化前未处于激活状态。
 //如果检测到问题并且启用了硬限制设置，Grbl将简单地通知用户检查限制并进入报警状态，而不是空闲状态。Grbl不会抛出警报消息。
@@ -298,246 +298,190 @@
 //我们还没有测试过这个。请报告进展情况！
 // #define USE_SPINDLE_DIR_AS_ENABLE_PIN // 默认禁用。取消注释以启用。
 
-// Alters the behavior of the spindle enable pin with the USE_SPINDLE_DIR_AS_ENABLE_PIN option . By default,
-// Grbl will not disable the enable pin if spindle speed is zero and M3/4 is active, but still sets the PWM 
-// output to zero. This allows the users to know if the spindle is active and use it as an additional control
-// input. However, in some use cases, user may want the enable pin to disable with a zero spindle speed and 
-// re-enable when spindle speed is greater than zero. This option does that.
-// NOTE: Requires USE_SPINDLE_DIR_AS_ENABLE_PIN to be enabled.
-// #define SPINDLE_ENABLE_OFF_WITH_ZERO_SPEED // Default disabled. Uncomment to enable.
+//使用“USE_spindle_DIR_AS_enable_pin”选项更改主轴启用引脚的行为。默认情况下，
+//如果主轴转速为零且M3/4激活，Grbl不会禁用启用引脚，但仍将PWM输出设置为零。
+//这允许用户知道主轴是否处于活动状态，并将其用作附加控制输入。
+//但是，在某些使用情况下，用户可能希望启用引脚在主轴转速为零时禁用，并在主轴转速大于零时重新启用。这个选项可以做到这一点。
+//注意：需要USE_SPINDLE_DIR_AS_ENABLE_PIN启用。
+// #define SPINDLE_ENABLE_OFF_WITH_ZERO_SPEED // 默认禁用。取消注释以启用。
 
-// With this enabled, Grbl sends back an echo of the line it has received, which has been pre-parsed (spaces
-// removed, capitalized letters, no comments) and is to be immediately executed by Grbl. Echoes will not be
-// sent upon a line buffer overflow, but should for all normal lines sent to Grbl. For example, if a user
-// sendss the line 'g1 x1.032 y2.45 (test comment)', Grbl will echo back in the form '[echo: G1X1.032Y2.45]'.
-// NOTE: Only use this for debugging purposes!! When echoing, this takes up valuable resources and can effect
-// performance. If absolutely needed for normal operation, the serial write buffer should be greatly increased
-// to help minimize transmission waiting within the serial write protocol.
-// #define REPORT_ECHO_LINE_RECEIVED // Default disabled. Uncomment to enable.
+//启用此选项后，Grbl会发回其接收到的行的回显，该行已被预解析（空格已删除、大写字母、无注释），Grbl将立即执行。
+//线路缓冲区溢出时不会发送回显，但应针对发送到Grbl的所有正常线路发送回波。
+//例如，如果用户发送行“g1 x1.032 y2.45（测试注释）”，Grbl将以“[echo:G1X1.032Y2.45]”的形式回传。
+//注意：仅用于调试目的！！回显时，这会占用宝贵的资源并影响性能。
+//如果正常操作绝对需要串行写入缓冲区，则应大大增加串行写入缓冲区，以帮助最小化串行写入协议中的传输等待。
+// #define REPORT_ECHO_LINE_RECEIVED // 默认禁用。取消注释以启用。
 
-// Minimum planner junction speed. Sets the default minimum junction speed the planner plans to at
-// every buffer block junction, except for starting from rest and end of the buffer, which are always
-// zero. This value controls how fast the machine moves through junctions with no regard for acceleration
-// limits or angle between neighboring block line move directions. This is useful for machines that can't
-// tolerate the tool dwelling for a split second, i.e. 3d printers or laser cutters. If used, this value
-// should not be much greater than zero or to the minimum value necessary for the machine to work.
+// 最小规划器连接速度。 设置规划器计划在每个缓冲区块连接处设置的默认最小连接速度，但从缓冲区的剩余部分开始和结束部分（始终为零）除外。
+//该值控制机器通过交叉点的速度，而不考虑加速度限制或相邻块线移动方向之间的角度。//This is useful for machines that can't tolerate the tool dwelling for a split second, i.e. 3d printers or laser cutters. 
+//如果使用，该值不应远大于零或机器工作所需的最小值。
 #define MINIMUM_JUNCTION_SPEED 0.0 // (mm/min)
 
-// Sets the minimum feed rate the planner will allow. Any value below it will be set to this minimum
-// value. This also ensures that a planned motion always completes and accounts for any floating-point
-// round-off errors. Although not recommended, a lower value than 1.0 mm/min will likely work in smaller
-// machines, perhaps to 0.1mm/min, but your success may vary based on multiple factors.
+//设置规划器允许的最小进给速率。低于该值的任何值都将设置为该最小值。
+//这还可以确保计划的运动始终完成，并考虑任何浮点舍入错误。
+//虽然不建议使用低于1.0 mm/min的值，但在较小的机器上可能适用，可能为0.1 mm/min，但您的成功率可能因多种因素而异。
 #define MINIMUM_FEED_RATE 1.0 // (mm/min)
 
-// Number of arc generation iterations by small angle approximation before exact arc trajectory
-// correction with expensive sin() and cos() calcualtions. This parameter maybe decreased if there
-// are issues with the accuracy of the arc generations, or increased if arc execution is getting
-// bogged down by too many trig calculations.
+//在使用昂贵的sin（）和cos（）计算进行精确圆弧轨迹校正之前，通过小角度近似生成圆弧的迭代次数。
+//若弧生成的准确性存在问题，则该参数可能会减小，若弧执行因太多trig计算而陷入困境，则该参数可能会增大。
 #define N_ARC_CORRECTION 12 // Integer (1-255)
 
-// The arc G2/3 g-code standard is problematic by definition. Radius-based arcs have horrible numerical
-// errors when arc at semi-circles(pi) or full-circles(2*pi). Offset-based arcs are much more accurate
-// but still have a problem when arcs are full-circles (2*pi). This define accounts for the floating
-// point issues when offset-based arcs are commanded as full circles, but get interpreted as extremely
-// small arcs with around machine epsilon (1.2e-7rad) due to numerical round-off and precision issues.
-// This define value sets the machine epsilon cutoff to determine if the arc is a full-circle or not.
-// NOTE: Be very careful when adjusting this value. It should always be greater than 1.2e-7 but not too
-// much greater than this. The default setting should capture most, if not all, full arc error situations.
+//根据定义，arc G2/3 g代码标准存在问题。当圆弧位于半圆（pi）或全圆（2*pi）时，基于半径的圆弧具有可怕的数值误差。
+//基于偏移的圆弧更精确，但当圆弧为整圆（2*pi）时仍然存在问题。当
+//基于偏移的圆弧被命令为整圆时，该定义解释了浮点问题，但由于数值舍入和精度问题，被解释为机器ε（1.2e-7rad）附近的极小圆弧。
+//此定义值设置机器ε截止，以确定圆弧是否为整圆。
+//注意：调整此值时要非常小心。它应该始终大于1.2e-7，但不能太大。默认设置应捕获大多数（如果不是全部）全圆弧错误情况。
 #define ARC_ANGULAR_TRAVEL_EPSILON 5E-7 // Float (radians)
 
-// Time delay increments performed during a dwell. The default value is set at 50ms, which provides
-// a maximum time delay of roughly 55 minutes, more than enough for most any application. Increasing
-// this delay will increase the maximum dwell time linearly, but also reduces the responsiveness of
-// run-time command executions, like status reports, since these are performed between each dwell
-// time step. Also, keep in mind that the Arduino delay timer is not very accurate for long delays.
+//暂停期间执行的时间延迟增量。默认值设置为50ms，这提供了大约55分钟的最大时间延迟，对于大多数应用程序来说已经足够了。
+//增加此延迟将线性增加最大驻留时间，但也会降低运行时命令执行（如状态报告）的响应性，因为这些执行是在每个驻留时间步长之间执行的。
+//另外，请记住，Arduino延迟计时器对于长延迟不是很准确。
 #define DWELL_TIME_STEP 50 // Integer (1-255) (milliseconds)
 
-// Creates a delay between the direction pin setting and corresponding step pulse by creating
-// another interrupt (Timer2 compare) to manage it. The main Grbl interrupt (Timer1 compare)
-// sets the direction pins, and does not immediately set the stepper pins, as it would in
-// normal operation. The Timer2 compare fires next to set the stepper pins after the step
-// pulse delay time, and Timer2 overflow will complete the step pulse, except now delayed
-// by the step pulse time plus the step pulse delay. (Thanks langwadt for the idea!)
-// NOTE: Uncomment to enable. The recommended delay must be > 3us, and, when added with the
-// user-supplied step pulse time, the total time must not exceed 127us. Reported successful
-// values for certain setups have ranged from 5 to 20us.
-// #define STEP_PULSE_DELAY 10 // Step pulse delay in microseconds. Default disabled.
+//通过创建另一个中断（Timer2比较）来管理方向引脚设置和相应阶跃脉冲之间的延迟。
+//主Grbl中断（定时器1比较）设置方向引脚，而不会像在正常操作中那样立即设置步进器引脚。
+//Timer2 比较器在步进脉冲延迟时间后触发，设置步进器引脚，Timer2 溢出将完成步进脉冲，但现在被步进脉冲时间加上步进脉冲延迟延迟。
+//（感谢朗瓦特的创意！）
+//注意：取消注释以启用。建议的延迟必须大于3us，并且当添加用户提供的步进脉冲时间时，总时间不得超过127us。
+//报告的某些设置的成功值范围为5到20us。
 
-// The number of linear motions in the planner buffer to be planned at any give time. The vast
-// majority of RAM that Grbl uses is based on this buffer size. Only increase if there is extra
-// available RAM, like when re-compiling for a Mega2560. Or decrease if the Arduino begins to
-// crash due to the lack of available RAM or if the CPU is having trouble keeping up with planning
-// new incoming motions as they are executed.
-// #define BLOCK_BUFFER_SIZE 16 // Uncomment to override default in planner.h.
+// #define STEP_PULSE_DELAY 10 // 以微秒为单位的步进脉冲延迟。默认禁用。
 
-// Governs the size of the intermediary step segment buffer between the step execution algorithm
-// and the planner blocks. Each segment is set of steps executed at a constant velocity over a
-// fixed time defined by ACCELERATION_TICKS_PER_SECOND. They are computed such that the planner
-// block velocity profile is traced exactly. The size of this buffer governs how much step
-// execution lead time there is for other Grbl processes have to compute and do their thing
-// before having to come back and refill this buffer, currently at ~50msec of step moves.
-// #define SEGMENT_BUFFER_SIZE 6 // Uncomment to override default in stepper.h.
+//在任何给定时间，计划器缓冲区中要计划的线性运动数。Grbl使用的绝大多数RAM都基于此缓冲区大小。
+//只有在有额外可用RAM的情况下，如为Mega2560重新编译时，才增加内存。
+//或者，如果Arduino由于缺少可用RAM而开始崩溃，或者如果CPU在执行新的传入动作时无法跟上规划，则减少。
 
-// Line buffer size from the serial input stream to be executed. Also, governs the size of
-// each of the startup blocks, as they are each stored as a string of this size. Make sure
-// to account for the available EEPROM at the defined memory address in settings.h and for
-// the number of desired startup blocks.
-// NOTE: 80 characters is not a problem except for extreme cases, but the line buffer size
-// can be too small and g-code blocks can get truncated. Officially, the g-code standards
-// support up to 256 characters. In future versions, this default will be increased, when
-// we know how much extra memory space we can re-invest into this.
-// #define LINE_BUFFER_SIZE 80  // Uncomment to override default in protocol.h
+// #define BLOCK_BUFFER_SIZE 16 // 取消注释以覆盖planner.h中的默认值
 
-// Serial send and receive buffer size. The receive buffer is often used as another streaming
-// buffer to store incoming blocks to be processed by Grbl when its ready. Most streaming
-// interfaces will character count and track each block send to each block response. So,
-// increase the receive buffer if a deeper receive buffer is needed for streaming and avaiable
-// memory allows. The send buffer primarily handles messages in Grbl. Only increase if large
-// messages are sent and Grbl begins to stall, waiting to send the rest of the message.
-// NOTE: Grbl generates an average status report in about 0.5msec, but the serial TX stream at
-// 115200 baud will take 5 msec to transmit a typical 55 character report. Worst case reports are
-// around 90-100 characters. As long as the serial TX buffer doesn't get continually maxed, Grbl
-// will continue operating efficiently. Size the TX buffer around the size of a worst-case report.
-// #define RX_BUFFER_SIZE 128 // (1-254) Uncomment to override defaults in serial.h
+//控制步执行算法和规划器块之间中间步进段缓冲区的大小。
+//每一段都是在一个固定时间内以恒定速度执行的一组步进，该时间由每秒的加速度确定。
+//计算它们时，可精确追踪规划器块速度剖面。
+//此缓冲区的大小控制其他Grbl进程在返回并重新填充此缓冲区之前必须计算和执行的步进执行前置时间，当前为50毫秒的步进移动。
+// #define SEGMENT_BUFFER_SIZE 6 // 取消注释以覆盖stepper.h中的默认值.
+
+//要执行的串行输入流的行缓冲区大小。此外，还控制每个启动块的大小，因为它们都存储为该大小的字符串。
+//确保在settings.h中的定义内存地址处说明可用的EEPROM以及所需启动块的数量。
+
+//注意：除了极端情况外，80个字符不是问题，但行缓冲区大小可能太小，g代码块可能会被截断。
+//官方规定，g代码标准最多支持256个字符。在未来的版本中，当我们知道可以重新投入多少额外的内存空间时，这个默认值将增加。
+// #define LINE_BUFFER_SIZE 80  // 取消注释以覆盖protocol.h中的默认值
+
+//串行发送和接收缓冲区大小。接收缓冲区通常用作另一个流式缓冲区，用于存储Grbl准备就绪时要处理的传入块。
+//大多数流式接口将对发送到每个块响应的每个块进行字符计数和跟踪。
+
+//因此，如果流和可用内存允许需要更深的接收缓冲区，请增加接收缓冲区。
+//发送缓冲区主要处理Grbl中的消息。仅当发送大消息且Grbl开始暂停，等待发送其余消息时，才增加。
+
+//注：Grbl大约在0.5毫秒内生成一个平均状态报告，但115200波特的串行TX流传输一个典型的55字符报告需要5毫秒。
+//最坏情况报告约为90-100个字符。
+//只要串行TX缓冲区没有持续最大化，Grbl将继续有效运行。根据最坏情况报告的大小调整TX缓冲区的大小。
+// #define RX_BUFFER_SIZE 128 // (1-254) 取消注释以覆盖serial.h中的默认值
 // #define TX_BUFFER_SIZE 100 // (1-254)
 
-// A simple software debouncing feature for hard limit switches. When enabled, the interrupt 
-// monitoring the hard limit switch pins will enable the Arduino's watchdog timer to re-check 
-// the limit pin state after a delay of about 32msec. This can help with CNC machines with 
-// problematic false triggering of their hard limit switches, but it WILL NOT fix issues with 
-// electrical interference on the signal cables from external sources. It's recommended to first
-// use shielded signal cables with their shielding connected to ground (old USB/computer cables 
-// work well and are cheap to find) and wire in a low-pass circuit into each limit pin.
-// #define ENABLE_SOFTWARE_DEBOUNCE // Default disabled. Uncomment to enable.
+//硬限位开关的简单软件去抖动功能。启用时，监控硬限位开关引脚的中断将使Arduino的看门狗定时器在大约32毫秒的延迟后重新检查限位引脚状态。
+//这有助于解决数控机床硬限位开关错误触发的问题，但无法解决外部电源信号电缆的电气干扰问题。
+//建议首先使用屏蔽连接到地面的屏蔽信号电缆（旧的USB/计算机电缆工作良好，价格便宜），并在低通电路中连接到每个限位引脚。
+// #define ENABLE_SOFTWARE_DEBOUNCE // 默认禁用。取消注释以启用。
 
-// Configures the position after a probing cycle during Grbl's check mode. Disabled sets
-// the position to the probe target, when enabled sets the position to the start position.
-// #define SET_CHECK_MODE_PROBE_TO_START // Default disabled. Uncomment to enable.
+//在Grbl的检查模式中配置探测循环后的位置。禁用将位置设置为探针目标，启用时将位置设置为开始位置。
+// #define SET_CHECK_MODE_PROBE_TO_START // 默认禁用。取消注释以启用。
 
-// Force Grbl to check the state of the hard limit switches when the processor detects a pin
-// change inside the hard limit ISR routine. By default, Grbl will trigger the hard limits
-// alarm upon any pin change, since bouncing switches can cause a state check like this to
-// misread the pin. When hard limits are triggered, they should be 100% reliable, which is the
-// reason that this option is disabled by default. Only if your system/electronics can guarantee
-// that the switches don't bounce, we recommend enabling this option. This will help prevent
-// triggering a hard limit when the machine disengages from the switch.
-// NOTE: This option has no effect if SOFTWARE_DEBOUNCE is enabled.
-// #define HARD_LIMIT_FORCE_STATE_CHECK // Default disabled. Uncomment to enable.
+//当处理器检测到硬限位ISR例程内的引脚变化时，强制Grbl检查硬限位开关的状态。
+//默认情况下，Grbl将在任何管脚更改时触发硬限制报警，因为反弹开关可能导致这样的状态检查误读管脚。
+//触发硬限制时，它们应100%可靠，这就是默认情况下禁用此选项的原因。
+//只有当您的系统/电子设备能够保证开关不会抖动时，我们建议启用此选项。
+//这将有助于防止机器脱离开关时触发硬限位。
+// 注意：如果启用SOFTWARE_DEBOUNCE，此选项无效。
+// #define HARD_LIMIT_FORCE_STATE_CHECK // 默认禁用。取消注释以启用。
 
-// Adjusts homing cycle search and locate scalars. These are the multipliers used by Grbl's
-// homing cycle to ensure the limit switches are engaged and cleared through each phase of
-// the cycle. The search phase uses the axes max-travel setting times the SEARCH_SCALAR to
-// determine distance to look for the limit switch. Once found, the locate phase begins and
-// uses the homing pull-off distance setting times the LOCATE_SCALAR to pull-off and re-engage
-// the limit switch.
-// NOTE: Both of these values must be greater than 1.0 to ensure proper function.
-// #define HOMING_AXIS_SEARCH_SCALAR  1.5 // Uncomment to override defaults in limits.c.
-// #define HOMING_AXIS_LOCATE_SCALAR  10.0 // Uncomment to override defaults in limits.c.
+//调整归位循环搜索和定位标量。这些是Grbl的归位循环使用的乘数，以确保限位开关在循环的每个阶段都接合和清除。
+//搜索阶段使用轴最大行程设置乘以搜索标量来确定查找限位开关的距离。
+//一旦找到，定位阶段开始，并使用归位回拉距离设置乘以定位标量拔出并重新接合限位开关。
 
-// Enable the '$RST=*', '$RST=$', and '$RST=#' eeprom restore commands. There are cases where
-// these commands may be undesirable. Simply comment the desired macro to disable it.
-// NOTE: See SETTINGS_RESTORE_ALL macro for customizing the `$RST=*` command.
-#define ENABLE_RESTORE_EEPROM_WIPE_ALL         // '$RST=*' Default enabled. Comment to disable.
-#define ENABLE_RESTORE_EEPROM_DEFAULT_SETTINGS // '$RST=$' Default enabled. Comment to disable.
-#define ENABLE_RESTORE_EEPROM_CLEAR_PARAMETERS // '$RST=#' Default enabled. Comment to disable.
+//注：这两个值必须大于1.0，以确保功能正常。
+// #define HOMING_AXIS_SEARCH_SCALAR  1.5 // 取消注释以覆盖limits.c中的默认值。
+// #define HOMING_AXIS_LOCATE_SCALAR  10.0 // 取消注释以覆盖limits.c中的默认值。
 
-// Defines the EEPROM data restored upon a settings version change and `$RST=*` command. Whenever the
-// the settings or other EEPROM data structure changes between Grbl versions, Grbl will automatically
-// wipe and restore the EEPROM. This macro controls what data is wiped and restored. This is useful
-// particularily for OEMs that need to retain certain data. For example, the BUILD_INFO string can be
-// written into the Arduino EEPROM via a seperate .INO sketch to contain product data. Altering this
-// macro to not restore the build info EEPROM will ensure this data is retained after firmware upgrades.
-// NOTE: Uncomment to override defaults in settings.h
+//启用“$RST=*”、“$RST=$”和“$RST=#”eeprom恢复命令。在某些情况下，这些命令可能是不需要的。只需注释所需的宏即可将其禁用。
+//注意：有关自定义“$RST=*`命令的信息，请参见SETTINGS_RESTORE_ALL宏。
+#define ENABLE_RESTORE_EEPROM_WIPE_ALL         // '$RST=*' 默认启用。注释后禁用。
+#define ENABLE_RESTORE_EEPROM_DEFAULT_SETTINGS // '$RST=$' 默认启用。注释后禁用。
+#define ENABLE_RESTORE_EEPROM_CLEAR_PARAMETERS // '$RST=#' 默认启用。注释后禁用。
+
+//定义设置版本更改和“$RST=*`命令后恢复的EEPROM数据。
+//当Grbl版本之间的设置或其他EEPROM数据结构发生变化时，Grbl将自动擦除并恢复EEPROM。
+//此宏控制擦除和恢复哪些数据。这对于需要保留某些数据的原始设备制造商尤其有用。
+//例如，构建信息字符串可以通过单独的.INO草图写入Arduino EEPROM，以包含产品数据。
+//更改此宏以不恢复构建信息EEPROM将确保固件升级后保留此数据。
+//注意：取消注释以覆盖settings.h中的默认值
 // #define SETTINGS_RESTORE_ALL (SETTINGS_RESTORE_DEFAULTS | SETTINGS_RESTORE_PARAMETERS | SETTINGS_RESTORE_STARTUP_LINES | SETTINGS_RESTORE_BUILD_INFO)
 
-// Enable the '$I=(string)' build info write command. If disabled, any existing build info data must
-// be placed into EEPROM via external means with a valid checksum value. This macro option is useful
-// to prevent this data from being over-written by a user, when used to store OEM product data.
-// NOTE: If disabled and to ensure Grbl can never alter the build info line, you'll also need to enable
-// the SETTING_RESTORE_ALL macro above and remove SETTINGS_RESTORE_BUILD_INFO from the mask.
-// NOTE: See the included grblWrite_BuildInfo.ino example file to write this string seperately.
-#define ENABLE_BUILD_INFO_WRITE_COMMAND // '$I=' Default enabled. Comment to disable.
+//启用“$I=（字符串）”生成信息写入命令。如果禁用，任何现有的构建信息数据必须通过具有有效校验和值的外部方式放入EEPROM。
+//当用于存储OEM产品数据时，此宏选项有助于防止用户过度写入此数据。
+//注意：如果禁用，并且为了确保Grbl永远不会更改构建信息行，您还需要启用上面的SETTINGS_RESTORE_BUILD_INFO宏并从掩码中删除SETTINGS_RESTORE_BUILD_INFO。
+//注：请参阅随附的grblWrite_BuildInfo。在示例文件中单独写入此字符串。
+#define ENABLE_BUILD_INFO_WRITE_COMMAND // '$I=' 默认启用。注释后禁用。
 
-// AVR processors require all interrupts to be disabled during an EEPROM write. This includes both
-// the stepper ISRs and serial comm ISRs. In the event of a long EEPROM write, this ISR pause can
-// cause active stepping to lose position and serial receive data to be lost. This configuration
-// option forces the planner buffer to completely empty whenever the EEPROM is written to prevent
-// any chance of lost steps.
-// However, this doesn't prevent issues with lost serial RX data during an EEPROM write, especially
-// if a GUI is premptively filling up the serial RX buffer simultaneously. It's highly advised for
-// GUIs to flag these gcodes (G10,G28.1,G30.1) to always wait for an 'ok' after a block containing
-// one of these commands before sending more data to eliminate this issue.
-// NOTE: Most EEPROM write commands are implicitly blocked during a job (all '$' commands). However,
-// coordinate set g-code commands (G10,G28/30.1) are not, since they are part of an active streaming
-// job. At this time, this option only forces a planner buffer sync with these g-code commands.
+//AVR处理器要求在EEPROM写入期间禁用所有中断。这包括步进式ISR和串行通信ISR。
+//在长时间EEPROM写入的情况下，此ISR暂停可能会导致主动步进丢失位置和串行接收数据丢失。
+//每当写入EEPROM时，此配置选项将强制规划器缓冲区完全清空，以防止丢失任何步骤。
+//然而，这并不能防止EEPROM写入期间串行RX数据丢失的问题，特别是当GUI同时预先填充串行RX缓冲区时。这是高度建议的
+//GUI标记这些GCODE（G10、G28.1、G30.1），以便在发送更多数据以消除此问题之前，始终在包含这些命令之一的块之后等待“ok”。
+//注：大多数EEPROM写入命令在作业期间被隐式阻止（所有“$”命令）。
+//但是，坐标集g代码命令（G10、G28/30.1）不是，因为它们是活动流作业的一部分。此时，此选项仅强制规划器缓冲区与这些g-code命令同步。
 #define FORCE_BUFFER_SYNC_DURING_EEPROM_WRITE //默认启用。注释后禁用
 
-// In Grbl v0.9 and prior, there is an old outstanding bug where the `WPos:` work position reported
-// may not correlate to what is executing, because `WPos:` is based on the g-code parser state, which
-// can be several motions behind. This option forces the planner buffer to empty, sync, and stop
-// motion whenever there is a command that alters the work coordinate offsets `G10,G43.1,G92,G54-59`.
-// This is the simplest way to ensure `WPos:` is always correct. Fortunately, it's exceedingly rare
-// that any of these commands are used need continuous motions through them.
+//在GRBLV0。9和之前的版本中, 有一个老的未解决的bug，`WPos:`工作位置报告可能与正在执行的内容不相关，因为`WPos:`基于g-code解析器状态，而可能会有几个动作落后。
+//每当有命令更改工作坐标偏移“G10,G43.1,G92,G54-59”时，此选项将强制规划器缓冲区清空、同步和停止运动。
+//这是确保“WPos:”始终正确的最简单方法。幸运的是，使用这些命令中的任何一个都需要通过它们进行连续运动，这是非常罕见的。
 #define FORCE_BUFFER_SYNC_DURING_WCO_CHANGE //默认启用。注释后禁用
 
-// By default, Grbl disables feed rate overrides for all G38.x probe cycle commands. Although this
-// may be different than some pro-class machine control, it's arguable that it should be this way. 
-// Most probe sensors produce different levels of error that is dependent on rate of speed. By 
-// keeping probing cycles to their programmed feed rates, the probe sensor should be a lot more
-// repeatable. If needed, you can disable this behavior by uncommenting the define below.
-// #define ALLOW_FEED_OVERRIDE_DURING_PROBE_CYCLES // Default disabled. Uncomment to enable.
+//默认情况下，Grbl禁用所有G38xx探头循环命令的进给速率覆盖。虽然这可能不同于一些专业级的机器控制，但有争议的是，它应该是这种方式。
+//大多数探针传感器产生不同程度的误差，这取决于速度。通过将探测周期保持在编程进给速率，探测传感器应具有更高的可重复性。
+//如果需要，可以通过取消注释下面的定义来禁用此行为。
+// #define ALLOW_FEED_OVERRIDE_DURING_PROBE_CYCLES // 默认禁用。取消注释以启用。
 
-// Enables and configures parking motion methods upon a safety door state. Primarily for OEMs
-// that desire this feature for their integrated machines. At the moment, Grbl assumes that
-// the parking motion only involves one axis, although the parking implementation was written
-// to be easily refactored for any number of motions on different axes by altering the parking
-// source code. At this time, Grbl only supports parking one axis (typically the Z-axis) that
-// moves in the positive direction upon retracting and negative direction upon restoring position.
-// The motion executes with a slow pull-out retraction motion, power-down, and a fast park.
-// Restoring to the resume position follows these set motions in reverse: fast restore to
-// pull-out position, power-up with a time-out, and plunge back to the original position at the
-// slower pull-out rate.
-// NOTE: Still a work-in-progress. Machine coordinates must be in all negative space and
-// does not work with HOMING_FORCE_SET_ORIGIN enabled. Parking motion also moves only in
-// positive direction.
-// #define PARKING_ENABLE  // Default disabled. Uncomment to enable
+//启用和配置安全门状态下的停车运动方法。
+//主要针对希望其集成机器具有此功能的原始设备制造商。
+//目前，Grbl假设停车运动只涉及一个轴，尽管停车实现通过修改停车源代码可以轻松地针对不同轴上的任意数量的运动进行重构。
+//此时，Grbl仅支持一个轴（通常为Z轴）的停车，该轴在缩回时正向移动，在恢复位置时反向移动。
+//该动作以缓慢的拉出收回动作、断电和快速停车执行。
+//恢复到恢复位置遵循以下相反的设置动作：快速恢复到拉回位置，超时通电，以较慢的拉回速率跳回原始位置。
+//注意：仍在进行中的工作。机器坐标必须在所有负空间中，并且在启用原点时不工作。停车运动也仅向正方向移动。
+// #define PARKING_ENABLE  // 默认禁用。取消注释以启用
 
-// Configure options for the parking motion, if enabled.
-#define PARKING_AXIS Z_AXIS // Define which axis that performs the parking motion
-#define PARKING_TARGET -5.0 // Parking axis target. In mm, as machine coordinate [-max_travel,0].
-#define PARKING_RATE 500.0 // Parking fast rate after pull-out in mm/min.
-#define PARKING_PULLOUT_RATE 100.0 // Pull-out/plunge slow feed rate in mm/min.
-#define PARKING_PULLOUT_INCREMENT 5.0 // Spindle pull-out and plunge distance in mm. Incremental distance.
-                                      // Must be positive value or equal to zero.
+//配置停车运动的选项（如果启用）。
+#define PARKING_AXIS Z_AXIS//定义执行停车运动的轴
+#define PARKING_TARGET -5.0//停车轴目标。以毫米为单位，作为机器坐标[-最大行程，0]。
+#define PARKING_RATE 500.0//拔出后的快速停车率（mm/min）。
+#define PARKING_PULLOUT_RATE 100.0//拉出/插入慢速进给速率，单位为mm/min。
+#define PARKING_PULLOUT_INCREMENT 5.0//心轴拉出和插入距离（mm）。增量距离。必须为正值或等于零。
 
-// Enables a special set of M-code commands that enables and disables the parking motion. 
-// These are controlled by `M56`, `M56 P1`, or `M56 Px` to enable and `M56 P0` to disable. 
-// The command is modal and will be set after a planner sync. Since it is g-code, it is 
-// executed in sync with g-code commands. It is not a real-time command.
-// NOTE: PARKING_ENABLE is required. By default, M56 is active upon initialization. Use 
-// DEACTIVATE_PARKING_UPON_INIT to set M56 P0 as the power-up default.
-// #define ENABLE_PARKING_OVERRIDE_CONTROL   // Default disabled. Uncomment to enable
-// #define DEACTIVATE_PARKING_UPON_INIT // Default disabled. Uncomment to enable.
+//启用启用和禁用停车运动的一组特殊M代码命令。 
+//它们由'M56'、'M56 P1'或'M56 Px'控制以启用，由'M56 P0'控制以禁用。 
+//该命令为模式命令，将在计划器同步后设置。
+//因为它是g代码，所以它与g代码命令同步执行。它不是一个实时命令。
+//注意：需要启用驻车功能。默认情况下，M56在初始化时处于活动状态。
+//使用DEACTIVATE_PARKING_UPON_INIT将M56 P0设置为通电默认值。
+// #define ENABLE_PARKING_OVERRIDE_CONTROL   // 默认禁用。取消注释以启用
+// #define DEACTIVATE_PARKING_UPON_INIT // 默认禁用。取消注释以启用.
 
-// This option will automatically disable the laser during a feed hold by invoking a spindle stop
-// override immediately after coming to a stop. However, this also means that the laser still may
-// be reenabled by disabling the spindle stop override, if needed. This is purely a safety feature
-// to ensure the laser doesn't inadvertently remain powered while at a stop and cause a fire.
+//该选项将通过在停止后立即调用主轴停止覆盖，在进给保持期间自动禁用激光器。
+//但是，这也意味着，如果需要，可通过禁用主轴停止超控来重新启用激光器。
+//这纯粹是一种安全功能，以确保激光器在停止时不会无意中保持通电状态并引发火灾。
 #define DISABLE_LASER_DURING_HOLD //默认启用。注释后禁用
 
-// This feature alters the spindle PWM/speed to a nonlinear output with a simple piecewise linear
-// curve. Useful for spindles that don't produce the right RPM from Grbl's standard spindle PWM 
-// linear model. Requires a solution by the 'fit_nonlinear_spindle.py' script in the /doc/script
-// folder of the repo. See file comments on how to gather spindle data and run the script to
-// generate a solution.
-// #define ENABLE_PIECEWISE_LINEAR_SPINDLE  // Default disabled. Uncomment to enable.
+//此功能通过简单的分段线性曲线将主轴PWM/速度改变为非线性输出。
+//适用于Grbl标准主轴PWM线性模型不能产生正确转速的主轴。
+//需要通过仓库中的/doc/script文件夹中的“fit_nonlinear_spindle.py”脚本提供解决方案。
+//请参阅有关如何收集主轴数据和运行脚本以生成解决方案的文件注释。
+// #define ENABLE_PIECEWISE_LINEAR_SPINDLE  // 默认禁用。取消注释以启用.
 
-// N_PIECES, RPM_MAX, RPM_MIN, RPM_POINTxx, and RPM_LINE_XX constants are all set and given by
-// the 'fit_nonlinear_spindle.py' script solution. Used only when ENABLE_PIECEWISE_LINEAR_SPINDLE
-// is enabled. Make sure the constant values are exactly the same as the script solution.
-// NOTE: When N_PIECES < 4, unused RPM_LINE and RPM_POINT defines are not required and omitted.
-#define N_PIECES 4  // Integer (1-4). Number of piecewise lines used in script solution.
-#define RPM_MAX  11686.4  // Max RPM of model. $30 > RPM_MAX will be limited to RPM_MAX.
+//N_PIECES、RPM_MAX、RPM_MIN、RPM_POINTXX和RPM_LINEXX常数均由“fit_nonlinear_spindle.py’脚本解决方案。
+//仅当启用“分段线性”主轴时使用。确保常量值与脚本解决方案完全相同。
+//注：当N_件小于4时，不需要且省略未使用的RPM_线和RPM_点定义。
+#define N_PIECES 4//整数（1-4）。脚本解决方案中使用的分段行数。
+#define RPM_MAX  11686.4//模型的最大转速$30>最大转速将限制为最大转速。
 #define RPM_MIN  202.5    // Min RPM of model. $31 < RPM_MIN will be limited to RPM_MIN.
 #define RPM_POINT12  6145.4  // Used N_PIECES >=2. Junction point between lines 1 and 2.
 #define RPM_POINT23  9627.8  // Used N_PIECES >=3. Junction point between lines 2 and 3.
@@ -552,80 +496,60 @@
 #define RPM_LINE_B4  1.151360e+03
 
 /* --------------------------------------------------------------------------------------- 
-  This optional dual axis feature is primarily for the homing cycle to locate two sides of 
-  a dual-motor gantry independently, i.e. self-squaring. This requires an additional limit
-  switch for the cloned motor. To self square, both limit switches on the cloned axis must
-  be physically positioned to trigger when the gantry is square. Highly recommend keeping  
-  the motors always enabled to ensure the gantry stays square with the $1=255 setting.
+  该可选双轴功能主要用于归位循环，以独立定位双电机机架的两侧，即自成方形。
+  这需要为克隆电机配备一个额外的限位开关。 
+  要自成方形，克隆轴上的两个限位开关必须物理定位，以便在机架为方形时触发。
+  强烈建议始终启用电机，以确保机架与$1=255设置保持垂直。
+  对于Arduino Uno上的Grbl，由于缺少可用引脚，克隆的轴限位开关必须与z轴限位引脚共享并与之连接。
+  归位循环必须在不同循环中归位z轴和克隆轴，这已经是默认配置。
 
-  For Grbl on the Arduino Uno, the cloned axis limit switch must to be shared with and 
-  wired with z-axis limit pin due to the lack of available pins. The homing cycle must home
-  the z-axis and cloned axis in different cycles, which is already the default config.
+  双轴功能通过将轴步输出克隆到另一对步来工作和方向引脚。可设置克隆电机的步进脉冲和方向独立于主轴电机。
+  然而，为了节省宝贵的闪存和内存，这双轴功能必须与其他功能共享相同的设置（步长/毫米、最大速度、加速度）
+  母马达。这不是独立第四轴的特征。只是克隆一个电机。
 
-  The dual axis feature works by cloning an axis step output onto another pair of step
-  and direction pins. The step pulse and direction of the cloned motor can be set 
-  independently of the main axis motor. However to save precious flash and memory, this
-  dual axis feature must share the same settings (step/mm, max speed, acceleration) as the 
-  parent motor. This is NOT a feature for an independent fourth axis. Only a motor clone.
-
-  WARNING: Make sure to test the directions of your dual axis motors! They must be setup
-  to move the same direction BEFORE running your first homing cycle or any long motion!
-  Motors moving in opposite directions can cause serious damage to your machine! Use this 
-  dual axis feature at your own risk.
+  警告：确保测试双轴电机的方向！必须对其进行设置在运行第一个归位循环或任何长运动之前，向同一方向移动！
+相反方向移动的电机可能会对机器造成严重损坏！用这个双轴功能，风险自负。
 */
-// NOTE: This feature requires approximately 400 bytes of flash. Certain configurations can
-// run out of flash to fit on an Arduino 328p/Uno. Only X and Y axes are supported. Variable
-// spindle/laser mode IS supported, but only for one config option. Core XY, spindle direction
-// pin, and M7 mist coolant are disabled/not supported.
-// #define ENABLE_DUAL_AXIS	// Default disabled. Uncomment to enable.
+//注意：此功能需要大约400字节的闪存。某些配置可能会耗尽闪存，无法安装在Arduino 328p/Uno上。
+//仅支持X轴和Y轴。支持可变主轴/激光模式，但仅适用于一个配置选项。CoreXY、主轴方向销和M7喷雾冷却液已禁用/不受支持。
+// #define ENABLE_DUAL_AXIS	// 默认禁用。取消注释以启用.
 
-// Select the one axis to mirror another motor. Only X and Y axis is supported at this time.
-#define DUAL_AXIS_SELECT  X_AXIS  // Must be either X_AXIS or Y_AXIS
+//选择一个轴以镜像另一个电机。此时仅支持X轴和Y轴。
+#define DUAL_AXIS_SELECT  X_AXIS//必须是X_AXIS或Y_AXIS
 
-// To prevent the homing cycle from racking the dual axis, when one limit triggers before the
-// other due to switch failure or noise, the homing cycle will automatically abort if the second 
-// motor's limit switch does not trigger within the three distance parameters defined below. 
-// Axis length percent will automatically compute a fail distance as a percentage of the max
-// travel of the other non-dual axis, i.e. if dual axis select is X_AXIS at 5.0%, then the fail 
-// distance will be computed as 5.0% of y-axis max travel. Fail distance max and min are the 
-// limits of how far or little a valid fail distance is.
+//为防止回零循环使双轴发生倾斜，当一个限位开关因开关故障或噪音而先触发另一个限位开关时，如果第二台电机的限位开关未在以下三个距离参数内触发，回零循环将自动中止。
+//轴长度百分比将自动计算故障距离，作为其他非双轴最大行程的百分比，即，如果双轴选择X_AXIS为5.0%，则故障距离将计算为y轴最大行程的5.0%。失效距离最大值和最小值是有效失效距离的极限。
 #define DUAL_AXIS_HOMING_FAIL_AXIS_LENGTH_PERCENT  5.0  // Float (percent)
 #define DUAL_AXIS_HOMING_FAIL_DISTANCE_MAX  25.0  // Float (mm)
 #define DUAL_AXIS_HOMING_FAIL_DISTANCE_MIN  2.5  // Float (mm)
 
-// Dual axis pin configuration currently supports two shields. Uncomment the shield you want,
-// and comment out the other one(s).
-// NOTE: Protoneer CNC Shield v3.51 has A.STP and A.DIR wired to pins A4 and A3 respectively.
-// The variable spindle (i.e. laser mode) build option works and may be enabled or disabled.
-// Coolant pin A3 is moved to D13, replacing spindle direction.
-#define DUAL_AXIS_CONFIG_PROTONEER_V3_51    // Uncomment to select. Comment other configs.
+//双轴引脚配置目前支持两个扩展板。
+//取消注释所需的扩展板，并注释掉其他扩展板。
+// 注：Protoneer CNC Shield v3。51的A.STP和A.DIR分别连接到引脚A4和A3。
+// 可变主轴（即激光模式）构建选项工作，可以启用或禁用。
+// 冷却液引脚A3移动到D13，更换主轴方向。
+#define DUAL_AXIS_CONFIG_PROTONEER_V3_51    // 取消注释以选择。注释其他配置。
 
-// NOTE: Arduino CNC Shield Clone (Originally Protoneer v3.0) has A.STP and A.DIR wired to 
-// D12 and D13, respectively. With the limit pins and stepper enable pin on this same port,
-// the spindle enable pin had to be moved and spindle direction pin deleted. The spindle
-// enable pin now resides on A3, replacing coolant enable. Coolant enable is bumped over to
-// pin A4. Spindle enable is used far more and this pin setup helps facilitate users to 
-// integrate this feature without arguably too much work. 
-// Variable spindle (i.e. laser mode) does NOT work with this shield as configured. While
-// variable spindle technically can work with this shield, it requires too many changes for
-// most user setups to accomodate. It would best be implemented by sharing all limit switches
-// on pins D9/D10 (as [X1,Z]/[X2,Y] or [X,Y2]/[Y1,Z]), home each axis independently, and 
-// updating lots of code to ensure everything is running correctly.
-// #define DUAL_AXIS_CONFIG_CNC_SHIELD_CLONE  // Uncomment to select. Comment other configs.
+//注：Arduino CNC 扩展板克隆（最初为Protoneer v3.0）的A.STP和A.DIR分别连接到D12和D13。
+//由于限位销和步进器启用销位于同一端口上，必须移动主轴启用销并删除主轴方向销。
+//主轴启用销现在位于A3上，取代冷却液启用。冷却液启用到针脚A4。
+//主轴启用使用得更多，这种引脚设置有助于方便用户集成此功能，而无需进行太多工作。
+//可变主轴（例如激光模式）不能与配置的扩展一起工作。
+//虽然从技术上讲，可变主轴可以与此扩展板一起工作，但它需要太多的更改，大多数用户设置无法适应。
+//最好通过共享插脚D9/D10上的所有限位开关（如[X1，Z]/[X2，Y]或[X，Y2]/[Y1，Z]）、独立设置每个轴的原点以及更新大量代码来实现，以确保一切正常运行。
+// #define DUAL_AXIS_CONFIG_CNC_SHIELD_CLONE  // 取消注释以选择。注释其他配置。
 
 
 /* ---------------------------------------------------------------------------------------
-   OEM Single File Configuration Option
+   OEM单文件配置选项
 
-   Instructions: Paste the cpu_map and default setting definitions below without an enclosing
-   #ifdef. Comment out the CPU_MAP_xxx and DEFAULT_xxx defines at the top of this file, and
-   the compiler will ignore the contents of defaults.h and cpu_map.h and use the definitions
-   below.
+   说明： 在下面粘贴cpu_映射和默认设置定义不带#ifdef。
+   注释掉这个文件顶部的CPU_MAP_xxx 和 DEFAULT_xxx定义，然后编译器会忽略defaults.h和cpu_map.h，并使用下面定义的。
 */
 
-// Paste CPU_MAP definitions here.
+// 将CPU映射定义粘贴到此处。
 
-// Paste default settings definitions here.
+// 在此处粘贴默认设置定义。
 
 
 #endif
