@@ -1,5 +1,5 @@
 /*
-  jog.h - Jogging methods
+  jog.h - 点动模块
   Grbl的一部分
 
   版权所有 2011-2016 Sungeun K. Jeon for Gnea Research LLC
@@ -17,10 +17,10 @@
 
 #include "gcode.h"
 
-// System motion line numbers must be zero.
+//系统运动线数目必须为零。
 #define JOG_LINE_NUMBER 0
 
-// Sets up valid jog motion received from g-code parser, checks for soft-limits, and executes the jog.
+//设置从g代码解析器接收的有效j点动运动，检查软限制，并执行点动。
 uint8_t jog_execute(plan_line_data_t *pl_data, parser_block_t *gc_block);
 
 #endif

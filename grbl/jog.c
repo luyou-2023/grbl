@@ -14,12 +14,10 @@
 
 #include "grbl.h"
 
-
-// Sets up valid jog motion received from g-code parser, checks for soft-limits, and executes the jog.
+//设置从g代码解析器接收的有效j点动运动，检查软限制，并执行点动。
 uint8_t jog_execute(plan_line_data_t *pl_data, parser_block_t *gc_block)
 {
-  // Initialize planner data struct for jogging motions.
-  // NOTE: Spindle and coolant are allowed to fully function with overrides during a jog.
+  //初始化点动运动的规划器数据结构。注意：在点动期间，允许主轴和冷却液在覆盖时完整功能。
   pl_data->feed_rate = gc_block->values.f;
   pl_data->condition |= PL_COND_FLAG_NO_FEED_OVERRIDE;
   #ifdef USE_LINE_NUMBERS
@@ -30,13 +28,13 @@ uint8_t jog_execute(plan_line_data_t *pl_data, parser_block_t *gc_block)
     if (system_check_travel_limits(gc_block->values.xyz)) { return(STATUS_TRAVEL_EXCEEDED); }
   }
 
-  // Valid jog command. Plan, set state, and execute.
+  //校验点动命令。计划、设置状态和执行。
   mc_line(gc_block->values.xyz,pl_data);
   if (sys.state == STATE_IDLE) {
-    if (plan_get_current_block() != NULL) { // Check if there is a block to execute.
+    if (plan_get_current_block() != NULL) { //检查是否有要执行的块。
       sys.state = STATE_JOG;
       st_prep_buffer();
-      st_wake_up();  // NOTE: Manual start. No state machine required.
+      st_wake_up();  //注：手动启动。不需要状态机。
     }
   }
 
