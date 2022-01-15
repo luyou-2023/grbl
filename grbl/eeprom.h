@@ -1,5 +1,5 @@
 /*
-  eeprom.h - EEPROM methods
+  eeprom.h - EEPROM方法
   Grbl的一部分
 
   版权所有 2011-2016 Sungeun K. Jeon for Gnea Research LLC

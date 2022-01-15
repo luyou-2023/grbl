@@ -1,4 +1,4 @@
-// This file has been prepared for Doxygen automatic documentation generation.
+//此文件是为Doxygen自动生成文档而准备的。
 /*! \file ********************************************************************
 *
 * Atmel Corporation
@@ -24,107 +24,105 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-/* These EEPROM bits have different names on different devices. */
+/*这些EEPROM位在不同的设备上有不同的名称。*/
 #ifndef EEPE
-		#define EEPE  EEWE  //!< EEPROM program/write enable.
-		#define EEMPE EEMWE //!< EEPROM master program/write enable.
+		#define EEPE  EEWE  //!< EEPROM程序/写入启用。
+		#define EEMPE EEMWE //!< EEPROM主程序/写入启用。
 #endif
 
-/* These two are unfortunately not defined in the device include files. */
+/*不幸的是，这两个未在设备包含文件中定义。*/
 #define EEPM1 5 //!< EEPROM Programming Mode Bit 1.
 #define EEPM0 4 //!< EEPROM Programming Mode Bit 0.
 
-/* Define to reduce code size. */
+/*定义以减少代码大小。*/
 #define EEPROM_IGNORE_SELFPROG //!< Remove SPM flag polling.
 
-/*! \brief  Read byte from EEPROM.
+/*! \brief  从EEPROM读取字节。
  *
- *  This function reads one byte from a given EEPROM address.
+ *  此函数从给定的EEPROM地址读取一个字节。
  *
- *  \note  The CPU is halted for 4 clock cycles during EEPROM read.
+ *  \note  在EEPROM读取期间，CPU暂停4个时钟周期。
  *
- *  \param  addr  EEPROM address to read from.
- *  \return  The byte read from the EEPROM address.
+ *  \param  addr  从中读取的EEPROM地址。
+ *  \return  从EEPROM地址读取的字节。
  */
 unsigned char eeprom_get_char( unsigned int addr )
 {
-	do {} while( EECR & (1<<EEPE) ); // Wait for completion of previous write.
-	EEAR = addr; // Set EEPROM address register.
-	EECR = (1<<EERE); // Start EEPROM read operation.
-	return EEDR; // Return the byte read from EEPROM.
+	do {} while( EECR & (1<<EEPE) ); //等待上一次写入完成。
+	EEAR = addr; //设置EEPROM地址寄存器。
+	EECR = (1<<EERE); //启动EEPROM读取操作。
+	return EEDR; //返回从EEPROM读取的字节。
 }
 
-/*! \brief  Write byte to EEPROM.
+/*! \brief  将字节写入EEPROM。
  *
- *  This function writes one byte to a given EEPROM address.
- *  The differences between the existing byte and the new value is used
- *  to select the most efficient EEPROM programming mode.
+ *  此函数将一个字节写入给定的EEPROM地址。
+ *  现有字节和新值之间的差异用于选择最有效的EEPROM编程模式。
+ *  
  *
- *  \note  The CPU is halted for 2 clock cycles during EEPROM programming.
+ *  \note  在EEPROM编程期间，CPU暂停2个时钟周期。
  *
- *  \note  When this function returns, the new EEPROM value is not available
- *         until the EEPROM programming time has passed. The EEPE bit in EECR
- *         should be polled to check whether the programming is finished.
+ *  \note  当此功能返回时，新的EEPROM值在EEPROM编程时间结束之前不可用。应轮询EECR中的EEPE位，以检查编程是否完成。
  *
- *  \note  The EEPROM_GetChar() function checks the EEPE bit automatically.
+ *  \note  函数的作用是：自动检查EEPE位。
  *
- *  \param  addr  EEPROM address to write to.
- *  \param  new_value  New EEPROM value.
+ *  \param  addr  要写入的EEPROM地址。
+ *  \param  new_value  新的EEPROM值。
  */
 void eeprom_put_char( unsigned int addr, unsigned char new_value )
 {
-	char old_value; // Old EEPROM value.
-	char diff_mask; // Difference mask, i.e. old value XOR new value.
+	char old_value; //旧的EEPROM值。
+	char diff_mask; //差异掩码，即旧值异或新值。
 
-	cli(); // Ensure atomic operation for the write operation.
+	cli(); //确保写入操作的原子操作。
 	
-	do {} while( EECR & (1<<EEPE) ); // Wait for completion of previous write.
+	do {} while( EECR & (1<<EEPE) ); //等待上一次写入完成。
 	#ifndef EEPROM_IGNORE_SELFPROG
-	do {} while( SPMCSR & (1<<SELFPRGEN) ); // Wait for completion of SPM.
+	do {} while( SPMCSR & (1<<SELFPRGEN) ); //等待SPM的完成。
 	#endif
 	
-	EEAR = addr; // Set EEPROM address register.
-	EECR = (1<<EERE); // Start EEPROM read operation.
-	old_value = EEDR; // Get old EEPROM value.
-	diff_mask = old_value ^ new_value; // Get bit differences.
+	EEAR = addr; //设置EEPROM地址寄存器。
+	EECR = (1<<EERE); //启动EEPROM读取操作。
+	old_value = EEDR; //获取旧的EEPROM值。
+	diff_mask = old_value ^ new_value; //获得一些差异。
 	
-	// Check if any bits are changed to '1' in the new value.
+	//检查新值中是否有任何位更改为“1”。
 	if( diff_mask & new_value ) {
-		// Now we know that _some_ bits need to be erased to '1'.
+		//现在我们知道有些位需要被擦除为“1”。
 		
-		// Check if any bits in the new value are '0'.
+		//检查新值中是否有任何位为“0”。
 		if( new_value != 0xff ) {
-			// Now we know that some bits need to be programmed to '0' also.
+			//现在我们知道一些位也需要编程为“0”。
 			
-			EEDR = new_value; // Set EEPROM data register.
-			EECR = (1<<EEMPE) | // Set Master Write Enable bit...
-			       (0<<EEPM1) | (0<<EEPM0); // ...and Erase+Write mode.
-			EECR |= (1<<EEPE);  // Start Erase+Write operation.
+			EEDR = new_value; //设置EEPROM数据寄存器。
+			EECR = (1<<EEMPE) | //设置主写入启用位。。。
+			       (0<<EEPM1) | (0<<EEPM0); //...和擦除+写入模式。
+			EECR |= (1<<EEPE);  //开始擦除+写入操作。
 		} else {
-			// Now we know that all bits should be erased.
+			//现在我们知道所有的位都应该被擦除。
 
-			EECR = (1<<EEMPE) | // Set Master Write Enable bit...
-			       (1<<EEPM0);  // ...and Erase-only mode.
-			EECR |= (1<<EEPE);  // Start Erase-only operation.
+			EECR = (1<<EEMPE) | //设置主写入启用位。。。
+			       (1<<EEPM0);  //...和仅擦除模式。
+			EECR |= (1<<EEPE);  //启动仅擦除操作。
 		}
 	} else {
-		// Now we know that _no_ bits need to be erased to '1'.
+		//现在我们知道无位需要擦除为“1”。
 		
-		// Check if any bits are changed from '1' in the old value.
+		//检查是否有任何位从旧值中的“1”更改。
 		if( diff_mask ) {
-			// Now we know that _some_ bits need to the programmed to '0'.
+			//现在我们知道有些位需要编程为“0”。
 			
-			EEDR = new_value;   // Set EEPROM data register.
-			EECR = (1<<EEMPE) | // Set Master Write Enable bit...
-			       (1<<EEPM1);  // ...and Write-only mode.
-			EECR |= (1<<EEPE);  // Start Write-only operation.
+			EEDR = new_value;   //设置EEPROM数据寄存器。
+			EECR = (1<<EEMPE) | //设置主写入启用位。。。
+			       (1<<EEPM1);  //...和只写模式。
+			EECR |= (1<<EEPE);  //启动只写操作。
 		}
 	}
 	
-	sei(); // Restore interrupt flag state.
+	sei(); //恢复中断标志状态。
 }
 
-// Extensions added as part of Grbl 
+//作为Grbl的一部分添加的扩展
 
 
 void memcpy_to_eeprom_with_checksum(unsigned int destination, char *source, unsigned int size) {
