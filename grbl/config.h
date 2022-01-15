@@ -1,79 +1,66 @@
 /*
-  config.h - compile time configuration
-  Part of Grbl
+  config.h - 编译时配置
+  Grbl的一部分
 
-  Copyright (c) 2012-2016 Sungeun K. Jeon for Gnea Research LLC
-  Copyright (c) 2009-2011 Simen Svale Skogsrud
+  版权所有 2011-2016 Sungeun K. Jeon for Gnea Research LLC
+  版权所有 2009-2011 Simen Svale Skogsrud
+  
+  Grbl 是自由软件：你可以在自由软件基金会的GNU 普通公共许可(GPL v3+)条款下发行，或修改它。
+  Grbl的发布是希望它能有用，但没有任何保证;甚至没有隐含的保证适销性或适合某一特定目的。
+  更多详细信息，请参阅GNU通用公共许可证。
 
-  Grbl is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  Grbl is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with Grbl.  If not, see <http://www.gnu.org/licenses/>.
+  您应该已经收到GNU通用公共许可证的副本和Grbl一起。如果没有，请参阅<http://www.gnu.org/licenses/>。
 */
 
-// This file contains compile-time configurations for Grbl's internal system. For the most part,
-// users will not need to directly modify these, but they are here for specific needs, i.e.
-// performance tuning or adjusting to non-typical machines.
+//此文件包含Grbl内部系统的编译时配置。
+//在大多数情况下，用户不需要直接修改它们，但它们是为了满足特定的需要，即性能调整或适应非典型机器。
 
-// IMPORTANT: Any changes here requires a full re-compiling of the source code to propagate them.
+//重要提示：此处的任何更改都需要重新编译源代码以更新它们。
 
 #ifndef config_h
 #define config_h
-#include "grbl.h" // For Arduino IDE compatibility.
+#include "grbl.h" // 兼容 Arduino IDE .
 
 
-// Define CPU pin map and default settings.
-// NOTE: OEMs can avoid the need to maintain/update the defaults.h and cpu_map.h files and use only
-// one configuration file by placing their specific defaults and pin map at the bottom of this file.
-// If doing so, simply comment out these two defines and see instructions below.
+//定义CPU引脚映射和默认设置。
+//注意：OEM可以避免维护/更新defaults.h和cpu_map.h文件，只使用一个配置文件，方法是将其特定的默认值和引脚映射放置在此文件底部。
+//如果这样做，只需注释掉这两个定义，并参见下面的说明。
 #define DEFAULTS_GENERIC
-#define CPU_MAP_ATMEGA328P // Arduino Uno CPU
+#define CPU_MAP_ATMEGA328P//阿杜伊诺一个CPU
 
-// Serial baud rate
+//串行波特率
 // #define BAUD_RATE 230400
 #define BAUD_RATE 115200
 
-// Define realtime command special characters. These characters are 'picked-off' directly from the
-// serial read data stream and are not passed to the grbl line execution parser. Select characters
-// that do not and must not exist in the streamed g-code program. ASCII control characters may be
-// used, if they are available per user setup. Also, extended ASCII codes (>127), which are never in
-// g-code programs, maybe selected for interface programs.
-// NOTE: If changed, manually update help message in report.c.
+//定义实时命令特殊字符。这些字符不会直接从grbl数据流中读取到grbl执行。选择流式g代码程序中不存在且不得存在的字符。
+//如果每个用户设置都有ASCII控制字符，则可以使用ASCII控制字符。
+//此外，扩展ASCII码（>127）永远不会出现在g代码程序中，可以选择用于接口程序。
+//注意：如果更改，请手动更新报告中的帮助消息。C
 
 #define CMD_RESET 0x18 // ctrl-x.
 #define CMD_STATUS_REPORT '?'
 #define CMD_CYCLE_START '~'
 #define CMD_FEED_HOLD '!'
 
-// NOTE: All override realtime commands must be in the extended ASCII character set, starting
-// at character value 128 (0x80) and up to 255 (0xFF). If the normal set of realtime commands,
-// such as status reports, feed hold, reset, and cycle start, are moved to the extended set
-// space, serial.c's RX ISR will need to be modified to accomodate the change.
+// 注意：所有覆盖实时命令必须在扩展ASCII字符集中，从字符值128（0x80）开始，最多255（0xFF）。
+//如果将正常的实时命令集（如状态报告、馈电保持、复位和循环启动）移动到扩展设置空间，则需要修改serial.c的RX ISR以适应更改。
 // #define CMD_RESET 0x80
 // #define CMD_STATUS_REPORT 0x81
 // #define CMD_CYCLE_START 0x82
 // #define CMD_FEED_HOLD 0x83
 #define CMD_SAFETY_DOOR 0x84
 #define CMD_JOG_CANCEL  0x85
-#define CMD_DEBUG_REPORT 0x86 // Only when DEBUG enabled, sends debug report in '{}' braces.
-#define CMD_FEED_OVR_RESET 0x90         // Restores feed override value to 100%.
+#define CMD_DEBUG_REPORT 0x86//仅当启用调试时，才会以“{}”大括号发送调试报告。
+#define CMD_FEED_OVR_RESET 0x90//将进给覆盖值恢复为100%。
 #define CMD_FEED_OVR_COARSE_PLUS 0x91
 #define CMD_FEED_OVR_COARSE_MINUS 0x92
 #define CMD_FEED_OVR_FINE_PLUS  0x93
 #define CMD_FEED_OVR_FINE_MINUS  0x94
-#define CMD_RAPID_OVR_RESET 0x95        // Restores rapid override value to 100%.
+#define CMD_RAPID_OVR_RESET 0x95//将快速覆盖值恢复为100%。
 #define CMD_RAPID_OVR_MEDIUM 0x96
 #define CMD_RAPID_OVR_LOW 0x97
 // #define CMD_RAPID_OVR_EXTRA_LOW 0x98 // *NOT SUPPORTED*
-#define CMD_SPINDLE_OVR_RESET 0x99      // Restores spindle override value to 100%.
+#define CMD_SPINDLE_OVR_RESET 0x99//将主轴覆盖值恢复为100%。
 #define CMD_SPINDLE_OVR_COARSE_PLUS 0x9A
 #define CMD_SPINDLE_OVR_COARSE_MINUS 0x9B
 #define CMD_SPINDLE_OVR_FINE_PLUS 0x9C
@@ -82,282 +69,234 @@
 #define CMD_COOLANT_FLOOD_OVR_TOGGLE 0xA0
 #define CMD_COOLANT_MIST_OVR_TOGGLE 0xA1
 
-// If homing is enabled, homing init lock sets Grbl into an alarm state upon power up. This forces
-// the user to perform the homing cycle (or override the locks) before doing anything else. This is
-// mainly a safety feature to remind the user to home, since position is unknown to Grbl.
-#define HOMING_INIT_LOCK // Comment to disable
+//如果启用了归零，则归零初始锁定会在通电时将Grbl设置为报警状态。
+//这将强制用户在执行任何其他操作之前执行重新定位循环（或覆盖锁）。
+//这主要是提醒用户归位的安全功能，因为Grbl不知道位置。
+#define HOMING_INIT_LOCK // 注释后禁用
 
-// Define the homing cycle patterns with bitmasks. The homing cycle first performs a search mode
-// to quickly engage the limit switches, followed by a slower locate mode, and finished by a short
-// pull-off motion to disengage the limit switches. The following HOMING_CYCLE_x defines are executed
-// in order starting with suffix 0 and completes the homing routine for the specified-axes only. If
-// an axis is omitted from the defines, it will not home, nor will the system update its position.
-// Meaning that this allows for users with non-standard cartesian machines, such as a lathe (x then z,
-// with no y), to configure the homing cycle behavior to their needs.
-// NOTE: The homing cycle is designed to allow sharing of limit pins, if the axes are not in the same
-// cycle, but this requires some pin settings changes in cpu_map.h file. For example, the default homing
-// cycle can share the Z limit pin with either X or Y limit pins, since they are on different cycles.
-// By sharing a pin, this frees up a precious IO pin for other purposes. In theory, all axes limit pins
-// may be reduced to one pin, if all axes are homed with seperate cycles, or vice versa, all three axes
-// on separate pin, but homed in one cycle. Also, it should be noted that the function of hard limits
-// will not be affected by pin sharing.
-// NOTE: Defaults are set for a traditional 3-axis CNC machine. Z-axis first to clear, followed by X & Y.
-#define HOMING_CYCLE_0 (1<<Z_AXIS)                // REQUIRED: First move Z to clear workspace.
-#define HOMING_CYCLE_1 ((1<<X_AXIS)|(1<<Y_AXIS))  // OPTIONAL: Then move X,Y at the same time.
+// 使用位掩码定义归位循环模式。 
+//归位循环首先执行搜索模式以快速接合限位开关，然后执行较慢的定位模式，最后通过短距离回拉动作来断开限位开关。
+//以下归零循环定义以后缀0开始的顺序执行，并仅完成指定轴的归零例程。
+//如果定义中省略了轴，则该轴将不在原点，系统也不会更新其位置。
+//这意味着，这允许使用非标准笛卡尔机器的用户，例如车床（x然后z，没有y）根据自己的需要配置回零循环行为。
+//注意：如果轴不在同一周期内，则回零周期设计为允许共享限位引脚，但这需要在cpu_map.h中更改一些引脚设置。
+//例如，默认归零循环可以与X或Y限位引脚共享Z限限位引脚，因为它们处于不同的周期。
+//这个引脚为了其他目的腾出了一个宝贵的IO。
+//理论上，如果所有轴都以单独的周期进行定位，则所有轴限位销可减少为一个引脚，
+//反之亦然，所有三个轴均位于单独的引脚上，但在一个周期内进行定位。 
+//此外，还应注意，硬限位的功能不会受到管脚共享的影响。
+// 注：默认值是为传统的三轴数控机床设置的。先清除Z轴，然后清除X和Y轴。
+#define HOMING_CYCLE_0 (1<<Z_AXIS)//必需：首先移动Z以清除工作区。
+#define HOMING_CYCLE_1 ((1<<X_AXIS)|(1<<Y_AXIS))  // 可选：然后同时移动X、Y。
 // #define HOMING_CYCLE_2                         // OPTIONAL: Uncomment and add axes mask to enable
 
-// NOTE: The following are two examples to setup homing for 2-axis machines.
+// 注：以下是为2轴机器设置回零的两个示例。
 // #define HOMING_CYCLE_0 ((1<<X_AXIS)|(1<<Y_AXIS))  // NOT COMPATIBLE WITH COREXY: Homes both X-Y in one cycle. 
 
 // #define HOMING_CYCLE_0 (1<<X_AXIS)  // COREXY COMPATIBLE: First home X
 // #define HOMING_CYCLE_1 (1<<Y_AXIS)  // COREXY COMPATIBLE: Then home Y
 
-// Number of homing cycles performed after when the machine initially jogs to limit switches.
-// This help in preventing overshoot and should improve repeatability. This value should be one or
-// greater.
-#define N_HOMING_LOCATE_CYCLE 1 // Integer (1-128)
+//机器初始点动至限位开关后执行的回位循环次数。
+// 这有助于防止过冲，并应提高重复性。此值应为1或1更大。
+#define N_HOMING_LOCATE_CYCLE 1 // 整数 (1-128)
 
-// Enables single axis homing commands. $HX, $HY, and $HZ for X, Y, and Z-axis homing. The full homing 
-// cycle is still invoked by the $H command. This is disabled by default. It's here only to address
-// users that need to switch between a two-axis and three-axis machine. This is actually very rare.
-// If you have a two-axis machine, DON'T USE THIS. Instead, just alter the homing cycle for two-axes.
+//启用单轴原点命令$用于X、Y和Z轴原点的HX、$HY和$HZ。$H命令仍会调用整个归位循环。这在默认情况下是禁用的。
+//这里只针对需要在两轴和三轴机器之间切换的用户。这实际上是非常罕见的。
+//如果你有一个双轴机器，不要使用这个。相反，只需改变两个轴的归零周期即可。
+
 // #define HOMING_SINGLE_AXIS_COMMANDS // Default disabled. Uncomment to enable.
 
-// After homing, Grbl will set by default the entire machine space into negative space, as is typical
-// for professional CNC machines, regardless of where the limit switches are located. Uncomment this
-// define to force Grbl to always set the machine origin at the homed location despite switch orientation.
+//归零后，Grbl将默认将整个机器空间设置为负空间，这是专业CNC机器的典型情况，无论限位开关位于何处。
+//取消对该定义的注释，以强制Grbl始终将机器原点设置在原点位置，而不管开关方向如何。
+
 // #define HOMING_FORCE_SET_ORIGIN // Uncomment to enable.
 
-// Number of blocks Grbl executes upon startup. These blocks are stored in EEPROM, where the size
-// and addresses are defined in settings.h. With the current settings, up to 2 startup blocks may
-// be stored and executed in order. These startup blocks would typically be used to set the g-code
-// parser state depending on user preferences.
+//启动时执行的Grbl块数。这些块存储在EEPROM中，其大小和地址在settings.h中定义
+//使用当前设置，最多可存储2个启动块，并按顺序执行。这些启动块通常用于根据用户偏好设置g代码解析器状态。
 #define N_STARTUP_LINE 2 // Integer (1-2)
 
-// Number of floating decimal points printed by Grbl for certain value types. These settings are
-// determined by realistic and commonly observed values in CNC machines. For example, position
-// values cannot be less than 0.001mm or 0.0001in, because machines can not be physically more
-// precise this. So, there is likely no need to change these, but you can if you need to here.
-// NOTE: Must be an integer value from 0 to ~4. More than 4 may exhibit round-off errors.
-#define N_DECIMAL_COORDVALUE_INCH 4 // Coordinate or position value in inches
-#define N_DECIMAL_COORDVALUE_MM   3 // Coordinate or position value in mm
-#define N_DECIMAL_RATEVALUE_INCH  1 // Rate or velocity value in in/min
-#define N_DECIMAL_RATEVALUE_MM    0 // Rate or velocity value in mm/min
-#define N_DECIMAL_SETTINGVALUE    3 // Decimals for floating point setting values
-#define N_DECIMAL_RPMVALUE        0 // RPM value in rotations per min.
+//Grbl为某些值类型打印的浮点小数点的数目。这些设置由数控机床中的实际值和常见观察值确定。
+//例如，位置值不能小于0.001mm或0.0001in，因为机器在物理上不能比这更精确。
+//所以，可能没有必要更改这些，但是如果需要，可以在这里更改。
+//注意：必须是0到~4之间的整数值。超过4个可能会出现舍入误差。
+#define N_DECIMAL_COORDVALUE_INCH 4//坐标或位置值（英寸）
+#define N_DECIMAL_COORDVALUE_MM   3//坐标或位置值（单位：mm）
+#define N_DECIMAL_RATEVALUE_INCH  1//速率或速度值（单位：in/min）
+#define N_DECIMAL_RATEVALUE_MM    0//速率或速度值，单位为mm/min
+#define N_DECIMAL_SETTINGVALUE    3//浮点设置值的小数
+#define N_DECIMAL_RPMVALUE        0//每分钟转数的RPM值。
 
-// If your machine has two limits switches wired in parallel to one axis, you will need to enable
-// this feature. Since the two switches are sharing a single pin, there is no way for Grbl to tell
-// which one is enabled. This option only effects homing, where if a limit is engaged, Grbl will
-// alarm out and force the user to manually disengage the limit switch. Otherwise, if you have one
-// limit switch for each axis, don't enable this option. By keeping it disabled, you can perform a
-// homing cycle while on the limit switch and not have to move the machine off of it.
+//如果您的机器有两个平行于一个轴的限位开关，则需要启用此功能。
+//由于两个开关共用一个管脚，Grbl无法判断哪一个已启用。 
+//此选项仅影响回零，如果启用限位，Grbl将发出警报并强制用户手动断开限位开关。
+//否则，如果每个轴都有一个限位开关，则不要启用此选项。 
+//通过使其处于禁用状态，您可以在限位开关上执行复位循环，而不必将机器移出限位开关。
 // #define LIMITS_TWO_SWITCHES_ON_AXES
 
-// Allows GRBL to track and report gcode line numbers.  Enabling this means that the planning buffer
-// goes from 16 to 15 to make room for the additional line number data in the plan_block_t struct
+//允许GRBL跟踪和报告gcode行号。启用这意味着计划缓冲区从16变为15，以便为计划块结构中的额外行号数据腾出空间
 // #define USE_LINE_NUMBERS // Disabled by default. Uncomment to enable.
 
-// Upon a successful probe cycle, this option provides immediately feedback of the probe coordinates
-// through an automatically generated message. If disabled, users can still access the last probe
-// coordinates through Grbl '$#' print parameters.
+//探测循环成功后，此选项通过自动生成的消息立即提供探测坐标的反馈。
+//如果禁用，用户仍可以通过Grbl“$#”打印参数访问最后一个探测器坐标。
 #define MESSAGE_PROBE_COORDINATES // Enabled by default. Comment to disable.
 
-// Enables a second coolant control pin via the mist coolant g-code command M7 on the Arduino Uno
-// analog pin 4. Only use this option if you require a second coolant control pin.
-// NOTE: The M8 flood coolant control pin on analog pin 3 will still be functional regardless.
+//通过Arduino Uno模拟针脚4上的雾化冷却液g代码命令M7启用第二个冷却液控制针脚。
+//仅当需要第二个冷却液控制引脚时才使用此选项。
+//注意：不管怎样，模拟针脚3上的M8溢流冷却液控制针脚仍将正常工作。
 // #define ENABLE_M7 // Disabled by default. Uncomment to enable.
 
-// This option causes the feed hold input to act as a safety door switch. A safety door, when triggered,
-// immediately forces a feed hold and then safely de-energizes the machine. Resuming is blocked until
-// the safety door is re-engaged. When it is, Grbl will re-energize the machine and then resume on the
-// previous tool path, as if nothing happened.
-// #define ENABLE_SAFETY_DOOR_INPUT_PIN // Default disabled. Uncomment to enable.
+// 此选项使进给保持输入充当安全门开关。
+// 安全门一旦触发，将立即强制进给保持，然后安全断电。 
+//在安全门重新接合之前，将阻止恢复。
+//此时，Grbl将使机器重新通电，然后恢复上一条刀具路径，就像什么也没发生一样。
+// #define ENABLE_SAFETY_DOOR_INPUT_PIN // 默认禁用。取消注释以启用。
 
-// After the safety door switch has been toggled and restored, this setting sets the power-up delay
-// between restoring the spindle and coolant and resuming the cycle.
+//切换并恢复安全门开关后，此设置设置恢复主轴和冷却液与恢复循环之间的通电延迟。
 #define SAFETY_DOOR_SPINDLE_DELAY 4.0 // Float (seconds)
 #define SAFETY_DOOR_COOLANT_DELAY 1.0 // Float (seconds)
 
-// Enable CoreXY kinematics. Use ONLY with CoreXY machines.
-// IMPORTANT: If homing is enabled, you must reconfigure the homing cycle #defines above to
-// #define HOMING_CYCLE_0 (1<<X_AXIS) and #define HOMING_CYCLE_1 (1<<Y_AXIS)
-// NOTE: This configuration option alters the motion of the X and Y axes to principle of operation
-// defined at (http://corexy.com/theory.html). Motors are assumed to positioned and wired exactly as
-// described, if not, motions may move in strange directions. Grbl requires the CoreXY A and B motors
-// have the same steps per mm internally.
-// #define COREXY // Default disabled. Uncomment to enable.
+// 启用CoreXY运动学。仅与CoreXY机器一起使用。
+// 重要提示：如果启用了归位，则必须重新配置归位循环。
+// #defines 上面的 #define HOMING_CYCLE_0 (1<<X_AXIS) 和 #define HOMING_CYCLE_1 (1<<Y_AXIS)
+// 注意：此配置选项将X轴和Y轴的运动更改为在(http://corexy.com/theory.html)中定义的工作原理 . 
+//假设电机的位置和接线与所述完全一致，否则，运动可能会向奇怪的方向移动。
+//Grbl要求CoreXY A和B电机内部每毫米的步数相同。
+// #define COREXY // 默认禁用。取消注释以启用。
 
-// Inverts pin logic of the control command pins based on a mask. This essentially means you can use
-// normally-closed switches on the specified pins, rather than the default normally-open switches.
-// NOTE: The top option will mask and invert all control pins. The bottom option is an example of
-// inverting only two control pins, the safety door and reset. See cpu_map.h for other bit definitions.
-// #define INVERT_CONTROL_PIN_MASK CONTROL_MASK // Default disabled. Uncomment to disable.
-// #define INVERT_CONTROL_PIN_MASK ((1<<CONTROL_SAFETY_DOOR_BIT)|(1<<CONTROL_RESET_BIT)) // Default disabled.
+//基于掩码反转控制命令引脚的引脚逻辑。这基本上意味着您可以在指定的管脚上使用常闭开关，而不是默认的常开开关。
+//注：顶部选项将掩码和反转所有控制引脚。底部选项是仅反转两个控制引脚（安全门和复位）的示例。参见cpu_map.h其他位定义。
+// #define INVERT_CONTROL_PIN_MASK CONTROL_MASK // 默认禁用。取消注释以禁用。
+// #define INVERT_CONTROL_PIN_MASK ((1<<CONTROL_SAFETY_DOOR_BIT)|(1<<CONTROL_RESET_BIT)) // 默认禁用。
 
-// Inverts select limit pin states based on the following mask. This effects all limit pin functions,
-// such as hard limits and homing. However, this is different from overall invert limits setting.
-// This build option will invert only the limit pins defined here, and then the invert limits setting
-// will be applied to all of them. This is useful when a user has a mixed set of limit pins with both
-// normally-open(NO) and normally-closed(NC) switches installed on their machine.
-// NOTE: PLEASE DO NOT USE THIS, unless you have a situation that needs it.
-// #define INVERT_LIMIT_PIN_MASK ((1<<X_LIMIT_BIT)|(1<<Y_LIMIT_BIT)) // Default disabled. Uncomment to enable.
+//基于以下掩码反转选择限位引脚状态。这会影响所有限位引脚功能，例如硬限位和回零。但是，这与整体反转限位设置不同。
+//此构建选项将仅反转此处定义的限制管脚，然后反转限制设置将应用于所有管脚。
+//当用户的机器上安装有一组混合的限位引脚，且带有常开（NO）和常闭（NC）开关时，此功能非常有用。
+//注意：请不要使用这个，除非你有需要它的情况。
+// #define INVERT_LIMIT_PIN_MASK ((1<<X_LIMIT_BIT)|(1<<Y_LIMIT_BIT)) //默认禁用。取消注释以启用。
 
-// Inverts the spindle enable pin from low-disabled/high-enabled to low-enabled/high-disabled. Useful
-// for some pre-built electronic boards.
-// NOTE: If VARIABLE_SPINDLE is enabled(default), this option has no effect as the PWM output and
-// spindle enable are combined to one pin. If you need both this option and spindle speed PWM,
-// uncomment the config option USE_SPINDLE_DIR_AS_ENABLE_PIN below.
-// #define INVERT_SPINDLE_ENABLE_PIN // Default disabled. Uncomment to enable.
 
-// Inverts the selected coolant pin from low-disabled/high-enabled to low-enabled/high-disabled. Useful
-// for some pre-built electronic boards.
-// #define INVERT_COOLANT_FLOOD_PIN // Default disabled. Uncomment to enable.
-// #define INVERT_COOLANT_MIST_PIN // Default disabled. Note: Enable M7 mist coolant in config.h
+//将主轴启用引脚从低禁用/高启用反转为低启用/高禁用。适用于某些预制电子板。
+//注意：如果启用可变_主轴（默认），此选项不起作用，因为PWM输出和主轴启用共用一个引脚。
+//如果您同时需要此选项和主轴速度PWM，请取消注释下面的配置选项USE_spindle_DIR_AS_ENABLE_PIN。
+// #define INVERT_SPINDLE_ENABLE_PIN //默认禁用。取消注释以启用。
 
-// When Grbl powers-cycles or is hard reset with the Arduino reset button, Grbl boots up with no ALARM
-// by default. This is to make it as simple as possible for new users to start using Grbl. When homing
-// is enabled and a user has installed limit switches, Grbl will boot up in an ALARM state to indicate
-// Grbl doesn't know its position and to force the user to home before proceeding. This option forces
-// Grbl to always initialize into an ALARM state regardless of homing or not. This option is more for
-// OEMs and LinuxCNC users that would like this power-cycle behavior.
+//将选定的冷却液针脚从低禁用/高启用反转为低启用/高禁用。适用于某些预制电子板。
+// #define INVERT_COOLANT_FLOOD_PIN // 默认禁用。取消注释以启用。
+// #define INVERT_COOLANT_MIST_PIN // 默认禁用。注意：在config.h中启用M7喷雾冷却液
+
+//当Grbl通电循环或使用Arduino重置按钮硬重置时，默认情况下，Grbl在无报警的情况下启动。
+//这是为了使新用户开始使用Grbl尽可能简单。启用归位且用户已安装限位开关时，Grbl将在报警状态下启动，以指示
+//Grbl不知道它的位置，因此无法在继续之前强制用户归位。这一选择迫使无论是否归位，Grbl始终初始化为报警状态。
+//此选项更适合OEM和LinuxCNC用户希望这种功率循环行为。
 // #define FORCE_INITIALIZATION_ALARM // Default disabled. Uncomment to enable.
 
-// At power-up or a reset, Grbl will check the limit switch states to ensure they are not active
-// before initialization. If it detects a problem and the hard limits setting is enabled, Grbl will
-// simply message the user to check the limits and enter an alarm state, rather than idle. Grbl will
-// not throw an alarm message.
+//通电或复位时，Grbl将检查限位开关状态，以确保它们在初始化前未处于激活状态。
+//如果检测到问题并且启用了硬限制设置，Grbl将简单地通知用户检查限制并进入报警状态，而不是空闲状态。Grbl不会抛出警报消息。
 #define CHECK_LIMITS_AT_INIT
 
-// ---------------------------------------------------------------------------------------
-// ADVANCED CONFIGURATION OPTIONS:
+//---------------------------------------------------------------------------------------
+//高级配置选项：
 
-// Enables code for debugging purposes. Not for general use and always in constant flux.
-// #define DEBUG // Uncomment to enable. Default disabled.
+//启用用于调试目的的代码。不适用于一般用途。
+// #define DEBUG // 取消注释以启用。默认禁用。
 
-// Configure rapid, feed, and spindle override settings. These values define the max and min
-// allowable override values and the coarse and fine increments per command received. Please
-// note the allowable values in the descriptions following each define.
-#define DEFAULT_FEED_OVERRIDE           100 // 100%. Don't change this value.
-#define MAX_FEED_RATE_OVERRIDE          200 // Percent of programmed feed rate (100-255). Usually 120% or 200%
-#define MIN_FEED_RATE_OVERRIDE           10 // Percent of programmed feed rate (1-100). Usually 50% or 1%
-#define FEED_OVERRIDE_COARSE_INCREMENT   10 // (1-99). Usually 10%.
-#define FEED_OVERRIDE_FINE_INCREMENT      1 // (1-99). Usually 1%.
+//配置快速、进给和主轴覆盖设置。这些值定义了允许的最大和最小覆盖值以及每个接收命令的粗略增量和精细增量。
+//请注意以下各定义说明中的允许值。
+#define DEFAULT_FEED_OVERRIDE           100// 100%. 不要更改此值。
+#define MAX_FEED_RATE_OVERRIDE          200//编程进给速度的百分比（100-255）。通常为120%或200%
+#define MIN_FEED_RATE_OVERRIDE           10//编程进给速度的百分比（1-100）。通常为50%或1%
+#define FEED_OVERRIDE_COARSE_INCREMENT   10// (1-99). 通常是10%。
+#define FEED_OVERRIDE_FINE_INCREMENT      1// (1-99). 通常为1%。
 
-#define DEFAULT_RAPID_OVERRIDE  100 // 100%. Don't change this value.
-#define RAPID_OVERRIDE_MEDIUM    50 // Percent of rapid (1-99). Usually 50%.
-#define RAPID_OVERRIDE_LOW       25 // Percent of rapid (1-99). Usually 25%.
-// #define RAPID_OVERRIDE_EXTRA_LOW 5 // *NOT SUPPORTED* Percent of rapid (1-99). Usually 5%.
+#define DEFAULT_RAPID_OVERRIDE  100// 100%. 不要更改此值。
+#define RAPID_OVERRIDE_MEDIUM    50//快速的百分比（1-99）。通常是50%。
+#define RAPID_OVERRIDE_LOW       25 //快速的百分比（1-99）。通常是25%。
+// #define RAPID_OVERRIDE_EXTRA_LOW 5 // *不支持*rapid的百分比（1-99）。通常是5%。
 
-#define DEFAULT_SPINDLE_SPEED_OVERRIDE    100 // 100%. Don't change this value.
-#define MAX_SPINDLE_SPEED_OVERRIDE        200 // Percent of programmed spindle speed (100-255). Usually 200%.
-#define MIN_SPINDLE_SPEED_OVERRIDE         10 // Percent of programmed spindle speed (1-100). Usually 10%.
-#define SPINDLE_OVERRIDE_COARSE_INCREMENT  10 // (1-99). Usually 10%.
-#define SPINDLE_OVERRIDE_FINE_INCREMENT     1 // (1-99). Usually 1%.
+#define DEFAULT_SPINDLE_SPEED_OVERRIDE    100// 100%. 不要更改此值。
+#define MAX_SPINDLE_SPEED_OVERRIDE        200//编程主轴转速的百分比（100-255）。通常是200%。
+#define MIN_SPINDLE_SPEED_OVERRIDE         10//编程主轴转速的百分比（1-100）。通常是10%。
+#define SPINDLE_OVERRIDE_COARSE_INCREMENT  10// (1-99). 通常是10%。
+#define SPINDLE_OVERRIDE_FINE_INCREMENT     1// (1-99). 通常为1%。
 
-// When a M2 or M30 program end command is executed, most g-code states are restored to their defaults.
-// This compile-time option includes the restoring of the feed, rapid, and spindle speed override values
-// to their default values at program end.
-#define RESTORE_OVERRIDES_AFTER_PROGRAM_END // Default enabled. Comment to disable.
+//当执行M2或M30程序结束命令时，大多数g代码状态将恢复为默认状态。
+//此编译时选项包括在程序结束时将进给、快速和主轴速度覆盖值恢复为其默认值。
+#define RESTORE_OVERRIDES_AFTER_PROGRAM_END//默认启用。注释后禁用
 
-// The status report change for Grbl v1.1 and after also removed the ability to disable/enable most data
-// fields from the report. This caused issues for GUI developers, who've had to manage several scenarios
-// and configurations. The increased efficiency of the new reporting style allows for all data fields to 
-// be sent without potential performance issues.
-// NOTE: The options below are here only provide a way to disable certain data fields if a unique
-// situation demands it, but be aware GUIs may depend on this data. If disabled, it may not be compatible.
-#define REPORT_FIELD_BUFFER_STATE // Default enabled. Comment to disable.
-#define REPORT_FIELD_PIN_STATE // Default enabled. Comment to disable.
-#define REPORT_FIELD_CURRENT_FEED_SPEED // Default enabled. Comment to disable.
-#define REPORT_FIELD_WORK_COORD_OFFSET // Default enabled. Comment to disable.
-#define REPORT_FIELD_OVERRIDES // Default enabled. Comment to disable.
-#define REPORT_FIELD_LINE_NUMBERS // Default enabled. Comment to disable.
+//Grbl v1.1及其后的状态报告更改还删除了从报告中禁用/启用大多数数据字段的功能。
+//这给GUI开发人员带来了问题，他们不得不管理多个场景和配置。新报告样式效率的提高允许发送所有数据字段，而不会出现潜在的性能问题。
+//注意：下面的选项仅在特殊情况需要时提供禁用某些数据字段的方法，但请注意GUI可能依赖于此数据。如果禁用，则可能不兼容。
+#define REPORT_FIELD_BUFFER_STATE //默认启用。注释后禁用
+#define REPORT_FIELD_PIN_STATE //默认启用。注释后禁用
+#define REPORT_FIELD_CURRENT_FEED_SPEED //默认启用。注释后禁用
+#define REPORT_FIELD_WORK_COORD_OFFSET //默认启用。注释后禁用
+#define REPORT_FIELD_OVERRIDES //默认启用。注释后禁用
+#define REPORT_FIELD_LINE_NUMBERS //默认启用。注释后禁用
 
-// Some status report data isn't necessary for realtime, only intermittently, because the values don't
-// change often. The following macros configures how many times a status report needs to be called before
-// the associated data is refreshed and included in the status report. However, if one of these value
-// changes, Grbl will automatically include this data in the next status report, regardless of what the
-// count is at the time. This helps reduce the communication overhead involved with high frequency reporting
-// and agressive streaming. There is also a busy and an idle refresh count, which sets up Grbl to send
-// refreshes more often when its not doing anything important. With a good GUI, this data doesn't need
-// to be refreshed very often, on the order of a several seconds.
-// NOTE: WCO refresh must be 2 or greater. OVR refresh must be 1 or greater.
+//某些状态报告数据不是实时所必需的，只是间歇性的，因为这些值不会经常更改。
+//以下宏配置在刷新关联数据并将其包含在状态报告中之前需要调用状态报告的次数。
+//但是，如果其中一个值发生变化，Grbl将自动在下一个状态报告中包含该数据，而不管当时的计数是多少。
+//这有助于减少高频报告和强流所涉及的通信开销。
+//还有一个忙刷新计数和一个空闲刷新计数，它设置Grbl在不做任何重要事情时更频繁地发送刷新。
+//一个好的GUI，这些数据不需要经常刷新，只需几秒钟。
+// 注意：WCO刷新必须为2或更大。OVR刷新必须为1或更大。
 #define REPORT_OVR_REFRESH_BUSY_COUNT 20  // (1-255)
-#define REPORT_OVR_REFRESH_IDLE_COUNT 10  // (1-255) Must be less than or equal to the busy count
+#define REPORT_OVR_REFRESH_IDLE_COUNT 10//（1-255）必须小于或等于忙计数
 #define REPORT_WCO_REFRESH_BUSY_COUNT 30  // (2-255)
-#define REPORT_WCO_REFRESH_IDLE_COUNT 10  // (2-255) Must be less than or equal to the busy count
+#define REPORT_WCO_REFRESH_IDLE_COUNT 10  // (2-255) 必须小于或等于忙计数
 
-// The temporal resolution of the acceleration management subsystem. A higher number gives smoother
-// acceleration, particularly noticeable on machines that run at very high feedrates, but may negatively
-// impact performance. The correct value for this parameter is machine dependent, so it's advised to
-// set this only as high as needed. Approximate successful values can widely range from 50 to 200 or more.
-// NOTE: Changing this value also changes the execution time of a segment in the step segment buffer.
-// When increasing this value, this stores less overall time in the segment buffer and vice versa. Make
-// certain the step segment buffer is increased/decreased to account for these changes.
+//加速度管理子系统的时间分辨率。数值越大，加速越平稳，在进给速度非常高的机器上尤其明显，但可能会对性能产生负面影响。
+//此参数的正确值取决于机器，因此建议仅将其设置为所需的最高值。成功的近似值范围很广，从50到200或更多。
+//注意：更改此值也会更改步骤段缓冲区中段的执行时间。
+//增加此值时，段缓冲区中存储的总时间会减少，反之亦然。确保增加/减少步长段缓冲区，以应对这些变化。
 #define ACCELERATION_TICKS_PER_SECOND 100
 
-// Adaptive Multi-Axis Step Smoothing (AMASS) is an advanced feature that does what its name implies,
-// smoothing the stepping of multi-axis motions. This feature smooths motion particularly at low step
-// frequencies below 10kHz, where the aliasing between axes of multi-axis motions can cause audible
-// noise and shake your machine. At even lower step frequencies, AMASS adapts and provides even better
-// step smoothing. See stepper.c for more details on the AMASS system works.
-#define ADAPTIVE_MULTI_AXIS_STEP_SMOOTHING  // Default enabled. Comment to disable.
+//自适应多轴步进平滑（AMASS）是一种高级功能，它实现了其名称所暗示的多轴运动的步进平滑。此功能可平滑运动，尤其是在10kHz以下的低阶跃频率下，多轴运动轴之间的混叠可能会导致可听噪音并震动机器。在更低的阶跃频率下，AMASS可以适应并提供更好的阶跃平滑。见步进电机。c获取有关AMASS系统工作的更多详细信息。
+#define ADAPTIVE_MULTI_AXIS_STEP_SMOOTHING  //默认启用。注释后禁用
 
-// Sets the maximum step rate allowed to be written as a Grbl setting. This option enables an error
-// check in the settings module to prevent settings values that will exceed this limitation. The maximum
-// step rate is strictly limited by the CPU speed and will change if something other than an AVR running
-// at 16MHz is used.
-// NOTE: For now disabled, will enable if flash space permits.
+//设置允许写入Grbl设置的最大步进速率。此选项启用设置模块中的错误检查，以防止设置值超过此限制。最大步进速率严格受CPU速度的限制，如果使用除16MHz运行的AVR以外的其他设备，则会发生变化。
+//注意：现在禁用，如果闪存空间允许，将启用。
 // #define MAX_STEP_RATE_HZ 30000 // Hz
 
-// By default, Grbl sets all input pins to normal-high operation with their internal pull-up resistors
-// enabled. This simplifies the wiring for users by requiring only a switch connected to ground,
-// although its recommended that users take the extra step of wiring in low-pass filter to reduce
-// electrical noise detected by the pin. If the user inverts the pin in Grbl settings, this just flips
-// which high or low reading indicates an active signal. In normal operation, this means the user
-// needs to connect a normal-open switch, but if inverted, this means the user should connect a
-// normal-closed switch.
-// The following options disable the internal pull-up resistors, sets the pins to a normal-low
-// operation, and switches must be now connect to Vcc instead of ground. This also flips the meaning
-// of the invert pin Grbl setting, where an inverted setting now means the user should connect a
-// normal-open switch and vice versa.
-// NOTE: All pins associated with the feature are disabled, i.e. XYZ limit pins, not individual axes.
-// WARNING: When the pull-ups are disabled, this requires additional wiring with pull-down resistors!
+// 默认情况下，Grbl将所有输入引脚设置为正常高电平操作，并启用其内部上拉电阻器。
+//这就简化了用户的布线，只需要一个接地开关，尽管建议用户在低通滤波器中进行额外的布线，以减少引脚检测到的电气噪声。
+//如果用户在Grbl设置中反转引脚，则只会翻转指示激活信号的高或低读数。
+//在正常操作中，这意味着用户需要连接一个正常打开的开关，但如果反转，这意味着用户应该连接一个正常关闭的开关。
+//以下选项禁用内部上拉电阻器，将引脚设置为正常低操作，开关现在必须连接到Vcc而不是接地。
+//这也颠覆了反向引脚Grbl设置的含义，反向设置现在意味着用户应连接正常打开的开关，反之亦然。
+//注：与该特征相关的所有引脚均被禁用，即XYZ限位引脚，而不是单个轴。
+//警告：当上拉被禁用时，这需要使用下拉电阻器进行额外接线！
 //#define DISABLE_LIMIT_PIN_PULL_UP
 //#define DISABLE_PROBE_PIN_PULL_UP
 //#define DISABLE_CONTROL_PIN_PULL_UP
 
-// Sets which axis the tool length offset is applied. Assumes the spindle is always parallel with
-// the selected axis with the tool oriented toward the negative direction. In other words, a positive
-// tool length offset value is subtracted from the current location.
-#define TOOL_LENGTH_OFFSET_AXIS Z_AXIS // Default z-axis. Valid values are X_AXIS, Y_AXIS, or Z_AXIS.
+//设置应用刀具长度偏移的轴。假设主轴始终与选定轴平行，刀具朝向负方向。换句话说，从当前位置减去正的刀具长度偏移值。
+#define TOOL_LENGTH_OFFSET_AXIS Z_AXIS//默认z轴。有效值为X_轴、Y_轴或Z_轴。
 
-// Enables variable spindle output voltage for different RPM values. On the Arduino Uno, the spindle
-// enable pin will output 5V for maximum RPM with 256 intermediate levels and 0V when disabled.
-// NOTE: IMPORTANT for Arduino Unos! When enabled, the Z-limit pin D11 and spindle enable pin D12 switch!
-// The hardware PWM output on pin D11 is required for variable spindle output voltages.
-#define VARIABLE_SPINDLE // Default enabled. Comment to disable.
+//启用不同转速值的可变主轴输出电压。在Arduino Uno上，主轴启用引脚将在256个中间电平的最大转速下输出5V，禁用时输出0V。
+//注意：对于Arduino Unos来说很重要！启用时，Z限制引脚D11和主轴启用引脚D12开关！
+//可变主轴输出电压需要引脚D11上的硬件PWM输出。
+#define VARIABLE_SPINDLE //默认启用。注释后禁用
 
-// Used by variable spindle output only. This forces the PWM output to a minimum duty cycle when enabled.
-// The PWM pin will still read 0V when the spindle is disabled. Most users will not need this option, but
-// it may be useful in certain scenarios. This minimum PWM settings coincides with the spindle rpm minimum
-// setting, like rpm max to max PWM. This is handy if you need a larger voltage difference between 0V disabled
-// and the voltage set by the minimum PWM for minimum rpm. This difference is 0.02V per PWM value. So, when
-// minimum PWM is at 1, only 0.02 volts separate enabled and disabled. At PWM 5, this would be 0.1V. Keep
-// in mind that you will begin to lose PWM resolution with increased minimum PWM values, since you have less
-// and less range over the total 255 PWM levels to signal different spindle speeds.
-// NOTE: Compute duty cycle at the minimum PWM by this equation: (% duty cycle)=(SPINDLE_PWM_MIN_VALUE/255)*100
-// #define SPINDLE_PWM_MIN_VALUE 5 // Default disabled. Uncomment to enable. Must be greater than zero. Integer (1-255).
+// 仅用于可变主轴输出。这将强制PWM输出在启用时达到最小占空比。
+// 当主轴停用时，PWM引脚仍将读取0V。 大多数用户不需要此选项，但在某些情况下它可能很有用。
+//该最小PWM设置与主轴rpm最小设置一致，如rpm max 到 max PWM。
+//如果您需要在0V禁用和最小PWM设置的电压之间有更大的电压差以达到最小转速，这将非常方便。
+//该差值为每PWM值0.02V。
+//因此，当最小PWM为1时，只有0.02伏单独启用和禁用。
+//在PWM 5时，这将为0.1V。请记住，随着最小PWM值的增加，您将开始失去PWM分辨率，因为您在总共255个PWM电平上发出不同主轴转速信号的范围越来越小。
+//注：通过以下等式计算最小脉宽调制下的占空比：（%占空比）=（SPINDLE_PWM_MIN_VALUE/255）*100
+// #define SPINDLE_PWM_MIN_VALUE 5 // 默认禁用。取消注释以启用。必须大于零。整数（1-255）。
 
-// By default on a 328p(Uno), Grbl combines the variable spindle PWM and the enable into one pin to help
-// preserve I/O pins. For certain setups, these may need to be separate pins. This configure option uses
-// the spindle direction pin(D13) as a separate spindle enable pin along with spindle speed PWM on pin D11.
-// NOTE: This configure option only works with VARIABLE_SPINDLE enabled and a 328p processor (Uno).
-// NOTE: Without a direction pin, M4 will not have a pin output to indicate a difference with M3. 
-// NOTE: BEWARE! The Arduino bootloader toggles the D13 pin when it powers up. If you flash Grbl with
-// a programmer (you can use a spare Arduino as "Arduino as ISP". Search the web on how to wire this.),
-// this D13 LED toggling should go away. We haven't tested this though. Please report how it goes!
-// #define USE_SPINDLE_DIR_AS_ENABLE_PIN // Default disabled. Uncomment to enable.
+//默认情况下，在328p（Uno）上，Grbl将可变主轴PWM和启用共用为一个引脚，以帮助保留I/O引脚。
+//对于某些设置，这些可能需要单独的引脚。此配置选项将主轴方向引脚（D13）与引脚D11上的主轴速度PWM一起用作单独的主轴启用引脚。
+// 注意：此配置选项仅适用于启用可变_主轴和328p处理器（Uno）。
+// 注：如果没有方向引脚，M4将没有指示与M3差异的引脚输出。
+// 注意：小心！Arduino引导加载程序在通电时切换D13引脚。 
+//如果您使用编程器烧录Grbl（您可以使用备用Arduino作为“Arduino作为ISP”）。
+//在网站上搜索如何连接。），此D13 LED切换应消失。
+//我们还没有测试过这个。请报告进展情况！
+// #define USE_SPINDLE_DIR_AS_ENABLE_PIN // 默认禁用。取消注释以启用。
 
 // Alters the behavior of the spindle enable pin with the USE_SPINDLE_DIR_AS_ENABLE_PIN option . By default,
 // Grbl will not disable the enable pin if spindle speed is zero and M3/4 is active, but still sets the PWM 
@@ -531,7 +470,7 @@
 // NOTE: Most EEPROM write commands are implicitly blocked during a job (all '$' commands). However,
 // coordinate set g-code commands (G10,G28/30.1) are not, since they are part of an active streaming
 // job. At this time, this option only forces a planner buffer sync with these g-code commands.
-#define FORCE_BUFFER_SYNC_DURING_EEPROM_WRITE // Default enabled. Comment to disable.
+#define FORCE_BUFFER_SYNC_DURING_EEPROM_WRITE //默认启用。注释后禁用
 
 // In Grbl v0.9 and prior, there is an old outstanding bug where the `WPos:` work position reported
 // may not correlate to what is executing, because `WPos:` is based on the g-code parser state, which
@@ -539,7 +478,7 @@
 // motion whenever there is a command that alters the work coordinate offsets `G10,G43.1,G92,G54-59`.
 // This is the simplest way to ensure `WPos:` is always correct. Fortunately, it's exceedingly rare
 // that any of these commands are used need continuous motions through them.
-#define FORCE_BUFFER_SYNC_DURING_WCO_CHANGE // Default enabled. Comment to disable.
+#define FORCE_BUFFER_SYNC_DURING_WCO_CHANGE //默认启用。注释后禁用
 
 // By default, Grbl disables feed rate overrides for all G38.x probe cycle commands. Although this
 // may be different than some pro-class machine control, it's arguable that it should be this way. 
@@ -584,7 +523,7 @@
 // override immediately after coming to a stop. However, this also means that the laser still may
 // be reenabled by disabling the spindle stop override, if needed. This is purely a safety feature
 // to ensure the laser doesn't inadvertently remain powered while at a stop and cause a fire.
-#define DISABLE_LASER_DURING_HOLD // Default enabled. Comment to disable.
+#define DISABLE_LASER_DURING_HOLD //默认启用。注释后禁用
 
 // This feature alters the spindle PWM/speed to a nonlinear output with a simple piecewise linear
 // curve. Useful for spindles that don't produce the right RPM from Grbl's standard spindle PWM 
