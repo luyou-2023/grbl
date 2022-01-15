@@ -1,38 +1,31 @@
 /*
-  limits.c - code pertaining to limit-switches and performing the homing cycle
-  Part of Grbl
+  limits.c - 与限位开关和执行复位循环有关的代码
+  Grbl的一部分
 
-  Copyright (c) 2012-2016 Sungeun K. Jeon for Gnea Research LLC
-  Copyright (c) 2009-2011 Simen Svale Skogsrud
+  版权所有 2011-2016 Sungeun K. Jeon for Gnea Research LLC
+  版权所有 2009-2011 Simen Svale Skogsrud
+  
+  Grbl 是自由软件：你可以在自由软件基金会的GNU 普通公共许可(GPL v3+)条款下发行，或修改它。
+  Grbl的发布是希望它能有用，但没有任何保证;甚至没有隐含的保证适销性或适合某一特定目的。
+  更多详细信息，请参阅GNU通用公共许可证。
 
-  Grbl is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  Grbl is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with Grbl.  If not, see <http://www.gnu.org/licenses/>.
+  您应该已经收到GNU通用公共许可证的副本和Grbl一起。如果没有，请参阅<http://www.gnu.org/licenses/>。
 */
 
 #include "grbl.h"
 
 
-// Homing axis search distance multiplier. Computed by this value times the cycle travel.
+//归位轴搜索距离乘数。由该值乘以循环行程计算得出。
 #ifndef HOMING_AXIS_SEARCH_SCALAR
-  #define HOMING_AXIS_SEARCH_SCALAR  1.5 // Must be > 1 to ensure limit switch will be engaged.
+  #define HOMING_AXIS_SEARCH_SCALAR  1.5 //必须大于1，以确保限位开关接合。
 #endif
 #ifndef HOMING_AXIS_LOCATE_SCALAR
-  #define HOMING_AXIS_LOCATE_SCALAR  5.0 // Must be > 1 to ensure limit switch is cleared.
+  #define HOMING_AXIS_LOCATE_SCALAR  5.0 //必须大于1，以确保限位开关已清除。
 #endif
 
 #ifdef ENABLE_DUAL_AXIS
-  // Flags for dual axis async limit trigger check.
-  #define DUAL_AXIS_CHECK_DISABLE     0  // Must be zero
+  //双轴异步限制触发器检查的标志。
+  #define DUAL_AXIS_CHECK_DISABLE     0  //必须为零
   #define DUAL_AXIS_CHECK_ENABLE      bit(0)
   #define DUAL_AXIS_CHECK_TRIGGER_1   bit(1)
   #define DUAL_AXIS_CHECK_TRIGGER_2   bit(2)
@@ -40,17 +33,17 @@
 
 void limits_init()
 {
-  LIMIT_DDR &= ~(LIMIT_MASK); // Set as input pins
+  LIMIT_DDR &= ~(LIMIT_MASK); //设置为输入引脚
 
   #ifdef DISABLE_LIMIT_PIN_PULL_UP
-    LIMIT_PORT &= ~(LIMIT_MASK); // Normal low operation. Requires external pull-down.
+    LIMIT_PORT &= ~(LIMIT_MASK); //正常低电压运行。需要外部下拉。
   #else
-    LIMIT_PORT |= (LIMIT_MASK);  // Enable internal pull-up resistors. Normal high operation.
+    LIMIT_PORT |= (LIMIT_MASK);  //启用内部上拉电阻器。正常高位运行。
   #endif
 
   if (bit_istrue(settings.flags,BITFLAG_HARD_LIMIT_ENABLE)) {
-    LIMIT_PCMSK |= LIMIT_MASK; // Enable specific pins of the Pin Change Interrupt
-    PCICR |= (1 << LIMIT_INT); // Enable Pin Change Interrupt
+    LIMIT_PCMSK |= LIMIT_MASK; //启用管脚更改中断的特定管脚
+    PCICR |= (1 << LIMIT_INT); //启用引脚更改中断
   } else {
     limits_disable();
   }
@@ -58,22 +51,21 @@ void limits_init()
   #ifdef ENABLE_SOFTWARE_DEBOUNCE
     MCUSR &= ~(1<<WDRF);
     WDTCSR |= (1<<WDCE) | (1<<WDE);
-    WDTCSR = (1<<WDP0); // Set time-out at ~32msec.
+    WDTCSR = (1<<WDP0); //将超时设置为约32毫秒。
   #endif
 }
 
 
-// Disables hard limits.
+//禁用硬限位。
 void limits_disable()
 {
-  LIMIT_PCMSK &= ~LIMIT_MASK;  // Disable specific pins of the Pin Change Interrupt
-  PCICR &= ~(1 << LIMIT_INT);  // Disable Pin Change Interrupt
+  LIMIT_PCMSK &= ~LIMIT_MASK;  //禁用管脚更改中断的特定管脚
+  PCICR &= ~(1 << LIMIT_INT);  //禁用引脚更改中断
 }
 
 
-// Returns limit state as a bit-wise uint8 variable. Each bit indicates an axis limit, where
-// triggered is 1 and not triggered is 0. Invert mask is applied. Axes are defined by their
-// number in bit position, i.e. Z_AXIS is (1<<2) or bit 2, and Y_AXIS is (1<<1) or bit 1.
+//以逐位uint8变量的形式返回限位状态。每个位表示轴限位，其中触发为1，未触发为0。
+//应用反转掩码。轴由其在位位置的编号定义，即Z_AXIS为（1<<2）或位2，Y_AXIS为（1<<1）或位1。
 uint8_t limits_get_state()
 {
   uint8_t limit_state = 0;
@@ -95,70 +87,64 @@ uint8_t limits_get_state()
 }
 
 
-// This is the Limit Pin Change Interrupt, which handles the hard limit feature. A bouncing
-// limit switch can cause a lot of problems, like false readings and multiple interrupt calls.
-// If a switch is triggered at all, something bad has happened and treat it as such, regardless
-// if a limit switch is being disengaged. It's impossible to reliably tell the state of a
-// bouncing pin because the Arduino microcontroller does not retain any state information when
-// detecting a pin change. If we poll the pins in the ISR, you can miss the correct reading if the 
-// switch is bouncing.
-// NOTE: Do not attach an e-stop to the limit pins, because this interrupt is disabled during
-// homing cycles and will not respond correctly. Upon user request or need, there may be a
-// special pinout for an e-stop, but it is generally recommended to just directly connect
-// your e-stop switch to the Arduino reset pin, since it is the most correct way to do this.
+//这是限制引脚更改中断，用于处理硬限位功能。
+//限位开关抖动会导致很多问题，比如错误读数和多次中断调用。
+//如果开关被触发，则表明发生了不好的情况，不管限位开关是否处于断开状态，都应如此处理。
+
+//由于Arduino微控制器在检测管脚变化时不保留任何状态信息，因此不可能可靠地判断管脚抖动的状态。
+//如果我们轮询ISR中的管脚，如果开关抖动，您可能会错过正确的读数。
+// 注意：不要将急停装置连接到限位引脚上，因为该中断在复位循环期间被禁用，并且不会正确响应。
+//根据用户要求或需要，可能会有一个特殊的急停引脚，但通常建议直接将急停开关连接到Arduino复位引脚，因为这是最正确的方法。
 #ifndef ENABLE_SOFTWARE_DEBOUNCE
-  ISR(LIMIT_INT_vect) // DEFAULT: Limit pin change interrupt process.
+  ISR(LIMIT_INT_vect) //默认值：限制引脚更改中断处理。
   {
-    // Ignore limit switches if already in an alarm state or in-process of executing an alarm.
-    // When in the alarm state, Grbl should have been reset or will force a reset, so any pending
-    // moves in the planner and serial buffers are all cleared and newly sent blocks will be
-    // locked out until a homing cycle or a kill lock command. Allows the user to disable the hard
-    // limit setting if their limits are constantly triggering after a reset and move their axes.
+    //如果已经处于报警状态或正在执行报警，则忽略限位开关。
+    //当处于报警状态时，Grbl应已重置或将强制重置，因此规划器和串行缓冲区中的任何等待运动都将被清除，新发送的块将被锁定，直到重新定位循环或终止锁定命令。
+    //允许用户禁用硬限位设置，如果重置后不断触发其限位并移动其轴。
     if (sys.state != STATE_ALARM) {
       if (!(sys_rt_exec_alarm)) {
         #ifdef HARD_LIMIT_FORCE_STATE_CHECK
           // Check limit pin state.
           if (limits_get_state()) {
-            mc_reset(); // Initiate system kill.
-            system_set_exec_alarm(EXEC_ALARM_HARD_LIMIT); // Indicate hard limit critical event
+            mc_reset(); //启动系统终止。
+            system_set_exec_alarm(EXEC_ALARM_HARD_LIMIT); //指示硬限位危险事件
           }
         #else
-          mc_reset(); // Initiate system kill.
-          system_set_exec_alarm(EXEC_ALARM_HARD_LIMIT); // Indicate hard limit critical event
+          mc_reset(); //启动系统终止。
+          system_set_exec_alarm(EXEC_ALARM_HARD_LIMIT); //指示硬限位危险事件
         #endif
       }
     }
   }
-#else // OPTIONAL: Software debounce limit pin routine.
-  // Upon limit pin change, enable watchdog timer to create a short delay. 
+#else //可选：软件去盎司限制引脚例行程序。
+//在限制引脚改变时，启用看门狗定时器以创建短延迟。
   ISR(LIMIT_INT_vect) { if (!(WDTCSR & (1<<WDIE))) { WDTCSR |= (1<<WDIE); } }
-  ISR(WDT_vect) // Watchdog timer ISR
+  ISR(WDT_vect) //看门狗定时器
   {
-    WDTCSR &= ~(1<<WDIE); // Disable watchdog timer. 
-    if (sys.state != STATE_ALARM) {  // Ignore if already in alarm state. 
+    WDTCSR &= ~(1<<WDIE); //禁用看门狗定时器。
+    if (sys.state != STATE_ALARM) {  //如果已处于报警状态，则忽略。
       if (!(sys_rt_exec_alarm)) {
-        // Check limit pin state. 
+        //检查限位引脚状态。
         if (limits_get_state()) {
-          mc_reset(); // Initiate system kill.
-          system_set_exec_alarm(EXEC_ALARM_HARD_LIMIT); // Indicate hard limit critical event
+          mc_reset(); //启动系统终止。
+          system_set_exec_alarm(EXEC_ALARM_HARD_LIMIT); // 指示硬限位危险事件
         }
       }  
     }
   }
 #endif
 
-// Homes the specified cycle axes, sets the machine position, and performs a pull-off motion after
-// completing. Homing is a special motion case, which involves rapid uncontrolled stops to locate
-// the trigger point of the limit switches. The rapid stops are handled by a system level axis lock
-// mask, which prevents the stepper algorithm from executing step pulses. Homing motions typically
-// circumvent the processes for executing motions in normal operation.
-// NOTE: Only the abort realtime command can interrupt this process.
-// TODO: Move limit pin-specific calls to a general function for portability.
+//返回指定的循环轴，设置机器位置，并在完成后执行回拉运动。
+//归位是一种特殊的运动情况，涉及快速不受控停止，以定位限位开关的触发点。
+//快速停止由系统级轴锁定掩码处理，该掩码防止步进算法执行步进脉冲。
+// 归位运动通常会绕过正常操作中执行运动的过程。
+// 注意：只有abort 实时命令才能中断此过程。
+// TODO:将特定限位引脚的调用移动到通用函数以实现可移植性。
 void limits_go_home(uint8_t cycle_mask)
 {
-  if (sys.abort) { return; } // Block if system reset has been issued.
+  if (sys.abort) { return; } //如果已发出系统重置，则阻塞。
 
-  // Initialize plan data struct for homing motion. Spindle and coolant are disabled.
+  //初始化归位运动的平面数据结构。主轴和冷却液已禁用。
   plan_line_data_t plan_data;
   plan_line_data_t *pl_data = &plan_data;
   memset(pl_data,0,sizeof(plan_line_data_t));
@@ -167,7 +153,7 @@ void limits_go_home(uint8_t cycle_mask)
     pl_data->line_number = HOMING_CYCLE_LINE_NUMBER;
   #endif
 
-  // Initialize variables used for homing computations.
+  //初始化用于归位计算的变量。
   uint8_t n_cycle = (2*N_HOMING_LOCATE_CYCLE+1);
   uint8_t step_pin[N_AXIS];
   #ifdef ENABLE_DUAL_AXIS
@@ -195,8 +181,8 @@ void limits_go_home(uint8_t cycle_mask)
     #endif
 
     if (bit_istrue(cycle_mask,bit(idx))) {
-      // Set target based on max_travel setting. Ensure homing switches engaged with search scalar.
-      // NOTE: settings.max_travel[] is stored as a negative value.
+      //根据最大行程设置设置目标。确保寻的开关与搜索标量接合。
+      //注意：settings.max_travel[]存储为负值。
       max_travel = max(max_travel,(-HOMING_AXIS_SEARCH_SCALAR)*settings.max_travel[idx]);
     }
   }
@@ -204,7 +190,7 @@ void limits_go_home(uint8_t cycle_mask)
     step_pin_dual = (1<<DUAL_STEP_BIT);
   #endif
 
-  // Set search mode with approach at seek rate to quickly engage the specified cycle_mask limit switches.
+  //将搜索模式设置为接近搜索速率，以快速接合指定的循环掩码限位开关。
   bool approach = true;
   float homing_rate = settings.homing_seek_rate;
 
@@ -213,7 +199,7 @@ void limits_go_home(uint8_t cycle_mask)
 
     system_convert_array_steps_to_mpos(target,sys_position);
 
-    // Initialize and declare variables needed for homing routine.
+    //初始化并声明归位例程所需的变量。
     axislock = 0;
     #ifdef ENABLE_DUAL_AXIS
       sys.homing_axis_lock_dual = 0;
@@ -222,7 +208,7 @@ void limits_go_home(uint8_t cycle_mask)
     #endif
     n_active_axis = 0;
     for (idx=0; idx<N_AXIS; idx++) {
-      // Set target location for active axes and setup computation for homing rate.
+      //设置活动轴的目标位置，并设置归位率的计算。
       if (bit_istrue(cycle_mask,bit(idx))) {
         n_active_axis++;
         #ifdef COREXY
@@ -239,8 +225,8 @@ void limits_go_home(uint8_t cycle_mask)
         #else
           sys_position[idx] = 0;
         #endif
-        // Set target direction based on cycle mask and homing cycle approach state.
-        // NOTE: This happens to compile smaller than any other implementation tried.
+        //根据周期掩码和寻的周期进近状态设置目标方向。
+        //注意：这种编译比任何其他尝试过的实现都要小。
         if (bit_istrue(settings.homing_dir_mask,bit(idx))) {
           if (approach) { target[idx] = -max_travel; }
           else { target[idx] = max_travel; }
@@ -248,7 +234,7 @@ void limits_go_home(uint8_t cycle_mask)
           if (approach) { target[idx] = max_travel; }
           else { target[idx] = -max_travel; }
         }
-        // Apply axislock to the step port pins active in this cycle.
+        //将轴锁定应用于此循环中激活的步进端口引脚。
         axislock |= step_pin[idx];
         #ifdef ENABLE_DUAL_AXIS
           if (idx == DUAL_AXIS_SELECT) { sys.homing_axis_lock_dual = step_pin_dual; }
@@ -256,19 +242,19 @@ void limits_go_home(uint8_t cycle_mask)
       }
 
     }
-    homing_rate *= sqrt(n_active_axis); // [sqrt(N_AXIS)] Adjust so individual axes all move at homing rate.
+    homing_rate *= sqrt(n_active_axis); // [sqrt(N_AXIS)] 调整以使各个轴都以归位速率移动。
     sys.homing_axis_lock = axislock;
 
-    // Perform homing cycle. Planner buffer should be empty, as required to initiate the homing cycle.
-    pl_data->feed_rate = homing_rate; // Set current homing rate.
-    plan_buffer_line(target, pl_data); // Bypass mc_line(). Directly plan homing motion.
+    //执行归位循环。规划器缓冲区应为空，以启动归位循环。
+    pl_data->feed_rate = homing_rate; //设置当前归位速率。
+    plan_buffer_line(target, pl_data); // 传递给 mc_line(). 直接规划归位运动。
 
-    sys.step_control = STEP_CONTROL_EXECUTE_SYS_MOTION; // Set to execute homing motion and clear existing flags.
-    st_prep_buffer(); // Prep and fill segment buffer from newly planned block.
-    st_wake_up(); // Initiate motion
+    sys.step_control = STEP_CONTROL_EXECUTE_SYS_MOTION; //设置为执行归位运动并清除现有标志。
+    st_prep_buffer(); //准备并填充新计划区块的段缓冲区。
+    st_wake_up(); // 启动运动
     do {
       if (approach) {
-        // Check limit state. Lock out cycle axes when they change.
+        //检查限位状态。当循环轴发生变化时锁定它们。
         limit_state = limits_get_state();
         for (idx=0; idx<N_AXIS; idx++) {
           if (axislock & step_pin[idx]) {
@@ -287,14 +273,14 @@ void limits_go_home(uint8_t cycle_mask)
         }
         sys.homing_axis_lock = axislock;
         #ifdef ENABLE_DUAL_AXIS
-          if (sys.homing_axis_lock_dual) { // NOTE: Only true when homing dual axis.
+          if (sys.homing_axis_lock_dual) { //注：仅在归位双轴时为真。
             if (limit_state & (1 << N_AXIS)) { 
               sys.homing_axis_lock_dual = 0;
               dual_axis_async_check |= DUAL_AXIS_CHECK_TRIGGER_2;
             }
           }
           
-          // When first dual axis limit triggers, record position and begin checking distance until other limit triggers. Bail upon failure.
+          //当第一个双轴限位触发时，记录位置并开始检查距离，直到其他限位触发。失败后退出。
           if (dual_axis_async_check) {
             if (dual_axis_async_check & DUAL_AXIS_CHECK_ENABLE) {
               if (( dual_axis_async_check &  (DUAL_AXIS_CHECK_TRIGGER_1 | DUAL_AXIS_CHECK_TRIGGER_2)) == (DUAL_AXIS_CHECK_TRIGGER_1 | DUAL_AXIS_CHECK_TRIGGER_2)) {
@@ -315,25 +301,25 @@ void limits_go_home(uint8_t cycle_mask)
         #endif
       }
 
-      st_prep_buffer(); // Check and prep segment buffer. NOTE: Should take no longer than 200us.
+      st_prep_buffer(); //检查并准备段缓冲区。注：所需时间不应超过200 US。
 
-      // Exit routines: No time to run protocol_execute_realtime() in this loop.
+      //退出例程：没有时间在此循环中运行protocol_execute_realtime（）。
       if (sys_rt_exec_state & (EXEC_SAFETY_DOOR | EXEC_RESET | EXEC_CYCLE_STOP)) {
         uint8_t rt_exec = sys_rt_exec_state;
-        // Homing failure condition: Reset issued during cycle.
+        //归位故障条件：在循环期间发出重置。
         if (rt_exec & EXEC_RESET) { system_set_exec_alarm(EXEC_ALARM_HOMING_FAIL_RESET); }
-        // Homing failure condition: Safety door was opened.
+        //归位故障条件：安全门打开。
         if (rt_exec & EXEC_SAFETY_DOOR) { system_set_exec_alarm(EXEC_ALARM_HOMING_FAIL_DOOR); }
-        // Homing failure condition: Limit switch still engaged after pull-off motion
+        //归位故障条件：回拉动作后限位开关仍处于接合状态
         if (!approach && (limits_get_state() & cycle_mask)) { system_set_exec_alarm(EXEC_ALARM_HOMING_FAIL_PULLOFF); }
-        // Homing failure condition: Limit switch not found during approach.
+        //归位故障条件：进近过程中未找到限位开关。
         if (approach && (rt_exec & EXEC_CYCLE_STOP)) { system_set_exec_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH); }
         if (sys_rt_exec_alarm) {
-          mc_reset(); // Stop motors, if they are running.
+          mc_reset(); //如果电机正在运行，则停止电机。
           protocol_execute_realtime();
           return;
         } else {
-          // Pull-off motion complete. Disable CYCLE_STOP from executing.
+          // 完成回拉动作。 禁止CYCLE_STOP执行。
           system_clear_exec_state_flag(EXEC_CYCLE_STOP);
           break;
         }
@@ -345,13 +331,13 @@ void limits_go_home(uint8_t cycle_mask)
       } while (STEP_MASK & axislock);
     #endif
 
-    st_reset(); // Immediately force kill steppers and reset step segment buffer.
-    delay_ms(settings.homing_debounce_delay); // Delay to allow transient dynamics to dissipate.
+    st_reset(); //立即强制杀死步进器并重置步进段缓冲区。
+    delay_ms(settings.homing_debounce_delay); // 延迟，以便运动衰减。
 
-    // Reverse direction and reset homing rate for locate cycle(s).
+    //为定位循环反转方向和重置归位速率。
     approach = !approach;
 
-    // After first cycle, homing enters locating phase. Shorten search to pull-off distance.
+    //第一个周期后，寻的进入定位阶段。缩短搜索回拉距离。
     if (approach) {
       max_travel = settings.homing_pulloff*HOMING_AXIS_LOCATE_SCALAR;
       homing_rate = settings.homing_feed_rate;
@@ -362,16 +348,15 @@ void limits_go_home(uint8_t cycle_mask)
 
   } while (n_cycle-- > 0);
 
-  // The active cycle axes should now be homed and machine limits have been located. By
-  // default, Grbl defines machine space as all negative, as do most CNCs. Since limit switches
-  // can be on either side of an axes, check and set axes machine zero appropriately. Also,
-  // set up pull-off maneuver from axes limit switches that have been homed. This provides
-  // some initial clearance off the switches and should also help prevent them from falsely
-  // triggering when hard limits are enabled or when more than one axes shares a limit pin.
+  // 活动的归位周期轴现在应该已经归位并且机器限位已经定位。
+  // 默认情况下，Grbl定义机器位置都是负值，就像大部分CNC所作的那样。
+  // 由于限位开关可以位于轴的任意一侧，请检查并适当地设置轴机零位。  
+  // 同时，在已归位的轴限开关上进行拉拔操作。  
+  // 这提供了一些初始的关闭开关的间隙，也应该有助于防止它们在启用硬限制或多个轴共享一个限制引脚时错误触发。  
   int32_t set_axis_position;
-  // Set machine positions for homed limit switches. Don't update non-homed axes.
+  // 为限位开关设置机器位置。不更新没有设置归位的轴。
   for (idx=0; idx<N_AXIS; idx++) {
-    // NOTE: settings.max_travel[] is stored as a negative value.
+    //注意：settings.max_travel[]存储为负值。
     if (cycle_mask & bit(idx)) {
       #ifdef HOMING_FORCE_SET_ORIGIN
         set_axis_position = 0;
@@ -401,20 +386,18 @@ void limits_go_home(uint8_t cycle_mask)
 
     }
   }
-  sys.step_control = STEP_CONTROL_NORMAL_OP; // Return step control to normal operation.
+  sys.step_control = STEP_CONTROL_NORMAL_OP; //将步进控制返回到正常操作。
 }
 
 
-// Performs a soft limit check. Called from mc_line() only. Assumes the machine has been homed,
-// the workspace volume is in all negative space, and the system is in normal operation.
-// NOTE: Used by jogging to limit travel within soft-limit volume.
+// 执行一个软限位检查，只在mc_line()中调用。假如机器已经归位,工作区位置都是负的(右手定则)，系统处于正常操作状态。
+// 注意：用于手动控制时，将行程限制在软限位的体积内。
 void limits_soft_check(float *target)
 {
   if (system_check_travel_limits(target)) {
     sys.soft_limit = true;
-    // Force feed hold if cycle is active. All buffered blocks are guaranteed to be within
-    // workspace volume so just come to a controlled stop so position is not lost. When complete
-    // enter alarm mode.
+    //如果循环激活，则强制进给保持。
+    //所有缓冲块都保证位于工作区体积内，因此只需到达受控停止位置，就不会丢失位置。完成后，进入报警模式。
     if (sys.state == STATE_CYCLE) {
       system_set_exec_state_flag(EXEC_FEED_HOLD);
       do {
@@ -422,9 +405,9 @@ void limits_soft_check(float *target)
         if (sys.abort) { return; }
       } while ( sys.state != STATE_IDLE );
     }
-    mc_reset(); // Issue system reset and ensure spindle and coolant are shutdown.
-    system_set_exec_alarm(EXEC_ALARM_SOFT_LIMIT); // Indicate soft limit critical event
-    protocol_execute_realtime(); // Execute to enter critical event loop and system abort
+    mc_reset(); //发布系统重置，确保主轴和冷却液关闭。
+    system_set_exec_alarm(EXEC_ALARM_SOFT_LIMIT); //指示软限位危险事件
+    protocol_execute_realtime(); //执行以进入危险事件循环和系统中止
     return;
   }
 }
