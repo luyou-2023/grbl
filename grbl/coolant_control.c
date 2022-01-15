@@ -1,5 +1,5 @@
 /*
-  coolant_control.c - coolant control methods
+  coolant_control.c - 冷却剂控制方法
    Grbl的一部分
 
   版权所有 2011-2016 Sungeun K. Jeon for Gnea Research LLC
@@ -17,7 +17,7 @@
 
 void coolant_init()
 {
-  COOLANT_FLOOD_DDR |= (1 << COOLANT_FLOOD_BIT); // Configure as output pin
+  COOLANT_FLOOD_DDR |= (1 << COOLANT_FLOOD_BIT); //配置为输出引脚
   #ifdef ENABLE_M7
     COOLANT_MIST_DDR |= (1 << COOLANT_MIST_BIT);
   #endif
@@ -25,7 +25,7 @@ void coolant_init()
 }
 
 
-// Returns current coolant output state. Overrides may alter it from programmed state.
+//返回当前冷却液输出状态。覆盖可能会改变其编程状态。
 uint8_t coolant_get_state()
 {
   uint8_t cl_state = COOLANT_STATE_DISABLE;
@@ -49,8 +49,8 @@ uint8_t coolant_get_state()
 }
 
 
-// Directly called by coolant_init(), coolant_set_state(), and mc_reset(), which can be at
-// an interrupt-level. No report flag set, but only called by routines that don't need it.
+//由coolant_init（）、coolant_set_state（）和mc_reset（）直接调用，它们可以处于中断级别。
+//未设置报告标志，但仅由不需要它的例程调用。
 void coolant_stop()
 {
   #ifdef INVERT_COOLANT_FLOOD_PIN
@@ -68,13 +68,11 @@ void coolant_stop()
 }
 
 
-// Main program only. Immediately sets flood coolant running state and also mist coolant, 
-// if enabled. Also sets a flag to report an update to a coolant state.
-// Called by coolant toggle override, parking restore, parking retract, sleep mode, g-code
-// parser program end, and g-code parser coolant_sync().
+//仅主程序。立即设置溢流冷却液运行状态，并在启用时雾化冷却液。还设置一个标志以报告冷却液状态的更新。
+//由coolant toggle override、parking restore、parking retract、sleep mode、g-code parser program end和g-code parser coolant_sync（）调用。
 void coolant_set_state(uint8_t mode)
 {
-  if (sys.abort) { return; } // Block during abort.  
+  if (sys.abort) { return; } //在中止期间阻塞。
   
 	if (mode & COOLANT_FLOOD_ENABLE) {
 		#ifdef INVERT_COOLANT_FLOOD_PIN
@@ -106,15 +104,14 @@ void coolant_set_state(uint8_t mode)
 		}
 	#endif
 	
-  sys.report_ovr_counter = 0; // Set to report change immediately
+  sys.report_ovr_counter = 0; //设置为立即报告更改
 }
 
 
-// G-code parser entry-point for setting coolant state. Forces a planner buffer sync and bails 
-// if an abort or check-mode is active.
+//用于设置冷却液状态的G代码解析器入口点。如果中止或检查模式处于活动状态，则强制规划器缓冲区同步并停止。
 void coolant_sync(uint8_t mode)
 {
   if (sys.state == STATE_CHECK_MODE) { return; }
-  protocol_buffer_synchronize(); // Ensure coolant turns on when specified in program.
+  protocol_buffer_synchronize(); //确保冷却液在程序中指定时开启。
   coolant_set_state(mode);
 }

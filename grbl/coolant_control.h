@@ -18,24 +18,24 @@
 #define COOLANT_NO_SYNC     false
 #define COOLANT_FORCE_SYNC  true
 
-#define COOLANT_STATE_DISABLE   0  // Must be zero
+#define COOLANT_STATE_DISABLE   0//必须为零
 #define COOLANT_STATE_FLOOD     PL_COND_FLAG_COOLANT_FLOOD
 #define COOLANT_STATE_MIST      PL_COND_FLAG_COOLANT_MIST
 
 
-// Initializes coolant control pins.
+//初始化冷却液控制引脚。
 void coolant_init();
 
-// Returns current coolant output state. Overrides may alter it from programmed state.
+//返回当前冷却液输出状态。覆盖可能会改变其编程状态。
 uint8_t coolant_get_state();
 
-// Immediately disables coolant pins.
+//立即禁用冷却液引脚。
 void coolant_stop();
 
-// Sets the coolant pins according to state specified.
+//根据指定的状态设置冷却液引脚。
 void coolant_set_state(uint8_t mode);
 
-// G-code parser entry-point for setting coolant states. Checks for and executes additional conditions.
+//用于设置冷却液状态的G代码解析器入口点。检查并执行附加条件。
 void coolant_sync(uint8_t mode);
 
 #endif
