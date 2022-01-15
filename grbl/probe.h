@@ -1,5 +1,5 @@
 /*
-  probe.h - code pertaining to probing methods
+  probe.h - 与对刀方法有关的代码
   Grbl的一部分
 
   版权所有 2011-2016 Sungeun K. Jeon for Gnea Research LLC
@@ -15,23 +15,21 @@
 #ifndef probe_h
 #define probe_h
 
-// Values that define the probing state machine.
-#define PROBE_OFF     0 // Probing disabled or not in use. (Must be zero.)
-#define PROBE_ACTIVE  1 // Actively watching the input pin.
+//定义探测状态机的值。
+#define PROBE_OFF     0//探测已禁用或未使用。（必须为零。）
+#define PROBE_ACTIVE  1//激活观察输入引脚。
 
-// Probe pin initialization routine.
+//探针引脚初始化例行程序。
 void probe_init();
 
-// Called by probe_init() and the mc_probe() routines. Sets up the probe pin invert mask to
-// appropriately set the pin logic according to setting for normal-high/normal-low operation
-// and the probing cycle modes for toward-workpiece/away-from-workpiece.
+//由probe_init（）和mc_probe（）例程调用。
+//根据正常高/正常低操作的设置和朝向工件/远离工件的探测循环模式，设置探针引脚反转掩码，以适当设置引脚逻辑。
 void probe_configure_invert_mask(uint8_t is_probe_away);
 
-// Returns probe pin state. Triggered = true. Called by gcode parser and probe state monitor.
+//返回探针引脚状态。触发=真。由gcode解析器和探测状态监视器调用。
 uint8_t probe_get_state();
 
-// Monitors probe pin state and records the system position when detected. Called by the
-// stepper ISR per ISR tick.
+//监测探针引脚状态，并在检测到时记录系统位置。由步进ISR按ISR周期调用。
 void probe_state_monitor();
 
 #endif

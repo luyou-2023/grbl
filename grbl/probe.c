@@ -1,5 +1,5 @@
 /*
-  probe.c - code pertaining to probing methods
+  probe.c - 与探测方法有关的代码
   Grbl的一部分
 
   版权所有 2011-2016 Sungeun K. Jeon for Gnea Research LLC
@@ -15,41 +15,37 @@
 #include "grbl.h"
 
 
-// Inverts the probe pin state depending on user settings and probing cycle mode.
+//根据用户设置和探测循环模式，反转探针引脚状态。
 uint8_t probe_invert_mask;
 
 
-// Probe pin initialization routine.
+//探针引脚初始化例行程序。
 void probe_init()
 {
-  PROBE_DDR &= ~(PROBE_MASK); // Configure as input pins
+  PROBE_DDR &= ~(PROBE_MASK); //配置为输入引脚
   #ifdef DISABLE_PROBE_PIN_PULL_UP
-    PROBE_PORT &= ~(PROBE_MASK); // Normal low operation. Requires external pull-down.
+    PROBE_PORT &= ~(PROBE_MASK); //正常低电压运行。需要外部下拉。
   #else
-    PROBE_PORT |= PROBE_MASK;    // Enable internal pull-up resistors. Normal high operation.
+    PROBE_PORT |= PROBE_MASK;    //启用内部上拉电阻器。正常高位运行。
   #endif
-  probe_configure_invert_mask(false); // Initialize invert mask.
+  probe_configure_invert_mask(false); //初始化反转掩码。
 }
 
-
-// Called by probe_init() and the mc_probe() routines. Sets up the probe pin invert mask to
-// appropriately set the pin logic according to setting for normal-high/normal-low operation
-// and the probing cycle modes for toward-workpiece/away-from-workpiece.
+//由probe_init（）和mc_probe（）例程调用。
+//根据正常高/正常低操作的设置和朝向工件/远离工件的探测循环模式，设置探针引脚反转掩码，以适当设置引脚逻辑。
 void probe_configure_invert_mask(uint8_t is_probe_away)
 {
-  probe_invert_mask = 0; // Initialize as zero.
+  probe_invert_mask = 0; //初始化为零。
   if (bit_isfalse(settings.flags,BITFLAG_INVERT_PROBE_PIN)) { probe_invert_mask ^= PROBE_MASK; }
   if (is_probe_away) { probe_invert_mask ^= PROBE_MASK; }
 }
 
 
-// Returns the probe pin state. Triggered = true. Called by gcode parser and probe state monitor.
+//返回探针引脚状态。触发=真。由gcode解析器和探测状态监视器调用。
 uint8_t probe_get_state() { return((PROBE_PIN & PROBE_MASK) ^ probe_invert_mask); }
 
 
-// Monitors probe pin state and records the system position when detected. Called by the
-// stepper ISR per ISR tick.
-// NOTE: This function must be extremely efficient as to not bog down the stepper ISR.
+//监测探针引脚状态，并在检测到时记录系统位置。由步进ISR按ISR周期调用。
 void probe_state_monitor()
 {
   if (probe_get_state()) {
