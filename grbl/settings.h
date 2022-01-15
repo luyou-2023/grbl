@@ -1,5 +1,5 @@
 /*
-  settings.h - eeprom configuration handling
+  settings.h - eeprom配置处理
    Grbl的一部分
 
   版权所有 2011-2016 Sungeun K. Jeon for Gnea Research LLC
@@ -18,11 +18,10 @@
 #include "grbl.h"
 
 
-// Version of the EEPROM data. Will be used to migrate existing data from older versions of Grbl
-// when firmware is upgraded. Always stored in byte 0 of eeprom
-#define SETTINGS_VERSION 10  // NOTE: Check settings_reset() when moving to next version.
+//EEPROM数据的版本。固件升级时，将用于从较旧版本的Grbl迁移现有数据。始终存储在eeprom的字节0中
+#define SETTINGS_VERSION 10  //注意：移动到下一版本时，请检查settings_reset（）。
 
-// Define bit flag masks for the boolean settings in settings.flag.
+//为settings.flag中的布尔设置定义位标志掩码
 #define BIT_REPORT_INCHES      0
 #define BIT_LASER_MODE         1
 #define BIT_INVERT_ST_ENABLE   2
@@ -41,62 +40,60 @@
 #define BITFLAG_INVERT_LIMIT_PINS  bit(BIT_INVERT_LIMIT_PINS)
 #define BITFLAG_INVERT_PROBE_PIN   bit(BIT_INVERT_PROBE_PIN)
 
-// Define status reporting boolean enable bit flags in settings.status_report_mask
+//在settings.status_report_mask中定义状态报告布尔启用位标志
 #define BITFLAG_RT_STATUS_POSITION_TYPE     bit(0)
 #define BITFLAG_RT_STATUS_BUFFER_STATE      bit(1)
 
-// Define settings restore bitflags.
+//定义设置还原位标志。
 #define SETTINGS_RESTORE_DEFAULTS bit(0)
 #define SETTINGS_RESTORE_PARAMETERS bit(1)
 #define SETTINGS_RESTORE_STARTUP_LINES bit(2)
 #define SETTINGS_RESTORE_BUILD_INFO bit(3)
 #ifndef SETTINGS_RESTORE_ALL
-  #define SETTINGS_RESTORE_ALL 0xFF // All bitflags
+  #define SETTINGS_RESTORE_ALL 0xFF //所有位标志
 #endif
 
-// Define EEPROM memory address location values for Grbl settings and parameters
-// NOTE: The Atmega328p has 1KB EEPROM. The upper half is reserved for parameters and
-// the startup script. The lower half contains the global settings and space for future
-// developments.
+//为Grbl设置和参数定义EEPROM存储器地址位置值
+//注：Atmega328p具有1KB EEPROM。上半部分保留用于参数和启动脚本。下半部分包含全球设置和未来发展空间。
 #define EEPROM_ADDR_GLOBAL         1U
 #define EEPROM_ADDR_PARAMETERS     512U
 #define EEPROM_ADDR_STARTUP_BLOCK  768U
 #define EEPROM_ADDR_BUILD_INFO     942U
 
-// Define EEPROM address indexing for coordinate parameters
-#define N_COORDINATE_SYSTEM 6  // Number of supported work coordinate systems (from index 1)
-#define SETTING_INDEX_NCOORD N_COORDINATE_SYSTEM+1 // Total number of system stored (from index 0)
-// NOTE: Work coordinate indices are (0=G54, 1=G55, ... , 6=G59)
-#define SETTING_INDEX_G28    N_COORDINATE_SYSTEM    // Home position 1
-#define SETTING_INDEX_G30    N_COORDINATE_SYSTEM+1  // Home position 2
+//定义坐标参数的EEPROM地址索引
+#define N_COORDINATE_SYSTEM 6  //支持的工作坐标系数量（从索引1开始）
+#define SETTING_INDEX_NCOORD N_COORDINATE_SYSTEM+1 //存储的系统总数（从索引0开始）
+//注：工作坐标指数为（0=G54，1=G55，…，6=G59）
+#define SETTING_INDEX_G28    N_COORDINATE_SYSTEM    // 归位位置1
+#define SETTING_INDEX_G30    N_COORDINATE_SYSTEM+1  // 归位位置2
 // #define SETTING_INDEX_G92    N_COORDINATE_SYSTEM+2  // Coordinate offset (G92.2,G92.3 not supported)
 
-// Define Grbl axis settings numbering scheme. Starts at START_VAL, every INCREMENT, over N_SETTINGS.
+//定义Grbl轴设置编号方案。 始于START_VAL, 每次递增, 直到 N_SETTINGS.
 #define AXIS_N_SETTINGS          4
-#define AXIS_SETTINGS_START_VAL  100 // NOTE: Reserving settings values >= 100 for axis settings. Up to 255.
-#define AXIS_SETTINGS_INCREMENT  10  // Must be greater than the number of axis settings
+#define AXIS_SETTINGS_START_VAL  100 //注意：保留轴设置的设置值>=100。最多255个。
+#define AXIS_SETTINGS_INCREMENT  10  //必须大于轴设置的数量
 
-// Global persistent settings (Stored from byte EEPROM_ADDR_GLOBAL onwards)
+//全局持久设置（从字节EEPROM_ADDR_GLOBAL开始存储）
 typedef struct {
-  // Axis settings
+  //轴设置
   float steps_per_mm[N_AXIS];
   float max_rate[N_AXIS];
   float acceleration[N_AXIS];
   float max_travel[N_AXIS];
 
-  // Remaining Grbl settings
+  //剩余Grbl设置
   uint8_t pulse_microseconds;
   uint8_t step_invert_mask;
   uint8_t dir_invert_mask;
-  uint8_t stepper_idle_lock_time; // If max value 255, steppers do not disable.
-  uint8_t status_report_mask; // Mask to indicate desired report data.
+  uint8_t stepper_idle_lock_time; //如果最大值为255，则步进器不禁用。
+  uint8_t status_report_mask; //用于指示所需报告数据的掩码。
   float junction_deviation;
   float arc_tolerance;
 
   float rpm_max;
   float rpm_min;
 
-  uint8_t flags;  // Contains default boolean settings
+  uint8_t flags;  //包含默认的布尔设置
 
   uint8_t homing_dir_mask;
   float homing_feed_rate;
@@ -106,40 +103,40 @@ typedef struct {
 } settings_t;
 extern settings_t settings;
 
-// Initialize the configuration subsystem (load settings from EEPROM)
+//初始化配置子系统（从EEPROM加载设置）
 void settings_init();
 
-// Helper function to clear and restore EEPROM defaults
+//用于清除和恢复EEPROM默认值的辅助功能
 void settings_restore(uint8_t restore_flag);
 
-// A helper method to set new settings from command line
+//从命令行设置新设置的助手方法
 uint8_t settings_store_global_setting(uint8_t parameter, float value);
 
-// Stores the protocol line variable as a startup line in EEPROM
+//将协议行变量作为启动行存储在EEPROM中
 void settings_store_startup_line(uint8_t n, char *line);
 
-// Reads an EEPROM startup line to the protocol line variable
+//将EEPROM启动行读取到协议行变量
 uint8_t settings_read_startup_line(uint8_t n, char *line);
 
-// Stores build info user-defined string
+//存储生成信息用户定义的字符串
 void settings_store_build_info(char *line);
 
-// Reads build info user-defined string
+//读取生成信息用户定义的字符串
 uint8_t settings_read_build_info(char *line);
 
-// Writes selected coordinate data to EEPROM
+//将所选坐标数据写入EEPROM
 void settings_write_coord_data(uint8_t coord_select, float *coord_data);
 
-// Reads selected coordinate data from EEPROM
+//从EEPROM读取选定的坐标数据
 uint8_t settings_read_coord_data(uint8_t coord_select, float *coord_data);
 
-// Returns the step pin mask according to Grbl's internal axis numbering
+//根据Grbl的内部轴编号返回步进管脚掩码
 uint8_t get_step_pin_mask(uint8_t i);
 
-// Returns the direction pin mask according to Grbl's internal axis numbering
+//根据Grbl的内部轴编号返回方向接点掩码
 uint8_t get_direction_pin_mask(uint8_t i);
 
-// Returns the limit pin mask according to Grbl's internal axis numbering
+//根据Grbl的内部轴编号返回限制引脚掩码
 uint8_t get_limit_pin_mask(uint8_t i);
 
 

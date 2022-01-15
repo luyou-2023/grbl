@@ -53,27 +53,27 @@ const __flash settings_t defaults = {\
     .max_travel[Z_AXIS] = (-DEFAULT_Z_MAX_TRAVEL)};
 
 
-// Method to store startup lines into EEPROM
+//将启动行存储到EEPROM中的方法
 void settings_store_startup_line(uint8_t n, char *line)
 {
   #ifdef FORCE_BUFFER_SYNC_DURING_EEPROM_WRITE
-    protocol_buffer_synchronize(); // A startup line may contain a motion and be executing. 
+    protocol_buffer_synchronize(); //启动行可能包含运动并正在执行。
   #endif
   uint32_t addr = n*(LINE_BUFFER_SIZE+1)+EEPROM_ADDR_STARTUP_BLOCK;
   memcpy_to_eeprom_with_checksum(addr,(char*)line, LINE_BUFFER_SIZE);
 }
 
 
-// Method to store build info into EEPROM
-// NOTE: This function can only be called in IDLE state.
+//将构建信息存储到EEPROM中的方法
+//注意：此函数只能在空闲状态下调用。
 void settings_store_build_info(char *line)
 {
-  // Build info can only be stored when state is IDLE.
+  //生成信息只能在状态为空闲时存储。
   memcpy_to_eeprom_with_checksum(EEPROM_ADDR_BUILD_INFO,(char*)line, LINE_BUFFER_SIZE);
 }
 
 
-// Method to store coord data parameters into EEPROM
+//将坐标数据参数存储到EEPROM中的方法
 void settings_write_coord_data(uint8_t coord_select, float *coord_data)
 {
   #ifdef FORCE_BUFFER_SYNC_DURING_EEPROM_WRITE
@@ -84,8 +84,8 @@ void settings_write_coord_data(uint8_t coord_select, float *coord_data)
 }
 
 
-// Method to store Grbl global settings struct and version number into EEPROM
-// NOTE: This function can only be called in IDLE state.
+//将Grbl全局设置结构和版本号存储到EEPROM中的方法
+//注意：此函数只能在空闲状态下调用。
 void write_global_settings()
 {
   eeprom_put_char(0, SETTINGS_VERSION);
@@ -93,7 +93,7 @@ void write_global_settings()
 }
 
 
-// Method to restore EEPROM-saved Grbl global settings back to defaults.
+//方法将EEPROM保存的Grbl全局设置恢复为默认值。
 void settings_restore(uint8_t restore_flag) {
   if (restore_flag & SETTINGS_RESTORE_DEFAULTS) {    
     settings = defaults;
@@ -114,24 +114,24 @@ void settings_restore(uint8_t restore_flag) {
     #endif
     #if N_STARTUP_LINE > 1
       eeprom_put_char(EEPROM_ADDR_STARTUP_BLOCK+(LINE_BUFFER_SIZE+1), 0);
-      eeprom_put_char(EEPROM_ADDR_STARTUP_BLOCK+(LINE_BUFFER_SIZE+2), 0); // Checksum
+      eeprom_put_char(EEPROM_ADDR_STARTUP_BLOCK+(LINE_BUFFER_SIZE+2), 0); //校验和
     #endif
   }
 
   if (restore_flag & SETTINGS_RESTORE_BUILD_INFO) {
     eeprom_put_char(EEPROM_ADDR_BUILD_INFO , 0);
-    eeprom_put_char(EEPROM_ADDR_BUILD_INFO+1 , 0); // Checksum
+    eeprom_put_char(EEPROM_ADDR_BUILD_INFO+1 , 0); //校验和
   }
 }
 
 
-// Reads startup line from EEPROM. Updated pointed line string data.
+//从EEPROM读取启动行。更新指向的线字符串数据。
 uint8_t settings_read_startup_line(uint8_t n, char *line)
 {
   uint32_t addr = n*(LINE_BUFFER_SIZE+1)+EEPROM_ADDR_STARTUP_BLOCK;
   if (!(memcpy_from_eeprom_with_checksum((char*)line, addr, LINE_BUFFER_SIZE))) {
-    // Reset line with default value
-    line[0] = 0; // Empty line
+    //使用默认值重置行
+    line[0] = 0; //空行
     settings_store_startup_line(n, line);
     return(false);
   }
@@ -139,12 +139,12 @@ uint8_t settings_read_startup_line(uint8_t n, char *line)
 }
 
 
-// Reads startup line from EEPROM. Updated pointed line string data.
+//从EEPROM读取启动行。更新指向的线字符串数据。
 uint8_t settings_read_build_info(char *line)
 {
   if (!(memcpy_from_eeprom_with_checksum((char*)line, EEPROM_ADDR_BUILD_INFO, LINE_BUFFER_SIZE))) {
-    // Reset line with default value
-    line[0] = 0; // Empty line
+    //使用默认值重置行
+    line[0] = 0; //空行
     settings_store_build_info(line);
     return(false);
   }
@@ -152,12 +152,12 @@ uint8_t settings_read_build_info(char *line)
 }
 
 
-// Read selected coordinate data from EEPROM. Updates pointed coord_data value.
+//从EEPROM读取选定的坐标数据。更新点坐标数据值。
 uint8_t settings_read_coord_data(uint8_t coord_select, float *coord_data)
 {
   uint32_t addr = coord_select*(sizeof(float)*N_AXIS+1) + EEPROM_ADDR_PARAMETERS;
   if (!(memcpy_from_eeprom_with_checksum((char*)coord_data, addr, sizeof(float)*N_AXIS))) {
-    // Reset with default zero vector
+    //使用默认零向量重置
     clear_vector_float(coord_data);
     settings_write_coord_data(coord_select,coord_data);
     return(false);
@@ -166,12 +166,12 @@ uint8_t settings_read_coord_data(uint8_t coord_select, float *coord_data)
 }
 
 
-// Reads Grbl global settings struct from EEPROM.
+//从EEPROM读取Grbl全局设置结构。
 uint8_t read_global_settings() {
   // Check version-byte of eeprom
   uint8_t version = eeprom_get_char(0);
   if (version == SETTINGS_VERSION) {
-    // Read settings-record and check checksum
+    //读取设置记录并检查校验和
     if (!(memcpy_from_eeprom_with_checksum((char*)&settings, EEPROM_ADDR_GLOBAL, sizeof(settings_t)))) {
       return(false);
     }
@@ -182,17 +182,17 @@ uint8_t read_global_settings() {
 }
 
 
-// A helper method to set settings from command line
+//从命令行设置设置的助手方法
 uint8_t settings_store_global_setting(uint8_t parameter, float value) {
   if (value < 0.0) { return(STATUS_NEGATIVE_VALUE); }
   if (parameter >= AXIS_SETTINGS_START_VAL) {
-    // Store axis configuration. Axis numbering sequence set by AXIS_SETTING defines.
-    // NOTE: Ensure the setting index corresponds to the report.c settings printout.
+    //存储轴配置。由轴设置设置的轴编号顺序定义。
+//注意：确保设置索引与打印的 report.c设置相对应。
     parameter -= AXIS_SETTINGS_START_VAL;
     uint8_t set_idx = 0;
     while (set_idx < AXIS_N_SETTINGS) {
       if (parameter < N_AXIS) {
-        // Valid axis setting found.
+        //校验轴设置。
         switch (set_idx) {
           case 0:
             #ifdef MAX_STEP_RATE_HZ
@@ -206,19 +206,19 @@ uint8_t settings_store_global_setting(uint8_t parameter, float value) {
             #endif
             settings.max_rate[parameter] = value;
             break;
-          case 2: settings.acceleration[parameter] = value*60*60; break; // Convert to mm/min^2 for grbl internal use.
-          case 3: settings.max_travel[parameter] = -value; break;  // Store as negative for grbl internal use.
+          case 2: settings.acceleration[parameter] = value*60*60; break; //转换为mm/min^2以供grbl内部使用。
+          case 3: settings.max_travel[parameter] = -value; break;  //作为负值储存，供grbl内部使用。
         }
-        break; // Exit while-loop after setting has been configured and proceed to the EEPROM write call.
+        break; //配置设置后退出while循环，继续EEPROM写入调用。
       } else {
         set_idx++;
-        // If axis index greater than N_AXIS or setting index greater than number of axis settings, error out.
+        //如果轴索引大于N_AXIS或设置索引大于轴设置数，则会出现错误。
         if ((parameter < AXIS_SETTINGS_INCREMENT) || (set_idx == AXIS_N_SETTINGS)) { return(STATUS_INVALID_STATEMENT); }
         parameter -= AXIS_SETTINGS_INCREMENT;
       }
     }
   } else {
-    // Store non-axis Grbl settings
+    //存储非轴Grbl设置
     uint8_t int_value = trunc(value);
     switch(parameter) {
       case 0:
@@ -227,21 +227,21 @@ uint8_t settings_store_global_setting(uint8_t parameter, float value) {
       case 1: settings.stepper_idle_lock_time = int_value; break;
       case 2:
         settings.step_invert_mask = int_value;
-        st_generate_step_dir_invert_masks(); // Regenerate step and direction port invert masks.
+        st_generate_step_dir_invert_masks(); //重新生成步进和方向端口反转掩码。
         break;
       case 3:
         settings.dir_invert_mask = int_value;
-        st_generate_step_dir_invert_masks(); // Regenerate step and direction port invert masks.
+        st_generate_step_dir_invert_masks(); //重新生成步进和方向端口反转掩码。
         break;
-      case 4: // Reset to ensure change. Immediate re-init may cause problems.
+      case 4: //重置以确保更改。立即重新初始化可能会导致问题。
         if (int_value) { settings.flags |= BITFLAG_INVERT_ST_ENABLE; }
         else { settings.flags &= ~BITFLAG_INVERT_ST_ENABLE; }
         break;
-      case 5: // Reset to ensure change. Immediate re-init may cause problems.
+      case 5: //重置以确保更改。立即重新初始化可能会导致问题。
         if (int_value) { settings.flags |= BITFLAG_INVERT_LIMIT_PINS; }
         else { settings.flags &= ~BITFLAG_INVERT_LIMIT_PINS; }
         break;
-      case 6: // Reset to ensure change. Immediate re-init may cause problems.
+      case 6: //重置以确保更改。立即重新初始化可能会导致问题。
         if (int_value) { settings.flags |= BITFLAG_INVERT_PROBE_PIN; }
         else { settings.flags &= ~BITFLAG_INVERT_PROBE_PIN; }
         probe_configure_invert_mask(false);
@@ -252,7 +252,7 @@ uint8_t settings_store_global_setting(uint8_t parameter, float value) {
       case 13:
         if (int_value) { settings.flags |= BITFLAG_REPORT_INCHES; }
         else { settings.flags &= ~BITFLAG_REPORT_INCHES; }
-        system_flag_wco_change(); // Make sure WCO is immediately updated.
+        system_flag_wco_change(); //确保立即更新WCO。
         break;
       case 20:
         if (int_value) {
@@ -263,13 +263,13 @@ uint8_t settings_store_global_setting(uint8_t parameter, float value) {
       case 21:
         if (int_value) { settings.flags |= BITFLAG_HARD_LIMIT_ENABLE; }
         else { settings.flags &= ~BITFLAG_HARD_LIMIT_ENABLE; }
-        limits_init(); // Re-init to immediately change. NOTE: Nice to have but could be problematic later.
+        limits_init(); //重新初始化以立即更改。注意：很好，但以后可能会有问题。
         break;
       case 22:
         if (int_value) { settings.flags |= BITFLAG_HOMING_ENABLE; }
         else {
           settings.flags &= ~BITFLAG_HOMING_ENABLE;
-          settings.flags &= ~BITFLAG_SOFT_LIMIT_ENABLE; // Force disable soft-limits.
+          settings.flags &= ~BITFLAG_SOFT_LIMIT_ENABLE; //强制禁用软限位。
         }
         break;
       case 23: settings.homing_dir_mask = int_value; break;
@@ -277,8 +277,8 @@ uint8_t settings_store_global_setting(uint8_t parameter, float value) {
       case 25: settings.homing_seek_rate = value; break;
       case 26: settings.homing_debounce_delay = int_value; break;
       case 27: settings.homing_pulloff = value; break;
-      case 30: settings.rpm_max = value; spindle_init(); break; // Re-initialize spindle rpm calibration
-      case 31: settings.rpm_min = value; spindle_init(); break; // Re-initialize spindle rpm calibration
+      case 30: settings.rpm_max = value; spindle_init(); break; //重新初始化主轴转速校准
+      case 31: settings.rpm_min = value; spindle_init(); break; //重新初始化主轴转速校准
       case 32:
         #ifdef VARIABLE_SPINDLE
           if (int_value) { settings.flags |= BITFLAG_LASER_MODE; }
@@ -296,17 +296,17 @@ uint8_t settings_store_global_setting(uint8_t parameter, float value) {
 }
 
 
-// Initialize the config subsystem
+//初始化配置子系统
 void settings_init() {
   if(!read_global_settings()) {
     report_status_message(STATUS_SETTING_READ_FAIL);
-    settings_restore(SETTINGS_RESTORE_ALL); // Force restore all EEPROM data.
+    settings_restore(SETTINGS_RESTORE_ALL); //强制恢复所有EEPROM数据。
     report_grbl_settings();
   }
 }
 
 
-// Returns step pin mask according to Grbl internal axis indexing.
+//根据Grbl内部轴索引返回步进引脚掩码。
 uint8_t get_step_pin_mask(uint8_t axis_idx)
 {
   if ( axis_idx == X_AXIS ) { return((1<<X_STEP_BIT)); }
@@ -315,7 +315,7 @@ uint8_t get_step_pin_mask(uint8_t axis_idx)
 }
 
 
-// Returns direction pin mask according to Grbl internal axis indexing.
+//根据Grbl内部轴索引返回方向引脚掩码。
 uint8_t get_direction_pin_mask(uint8_t axis_idx)
 {
   if ( axis_idx == X_AXIS ) { return((1<<X_DIRECTION_BIT)); }
@@ -324,7 +324,7 @@ uint8_t get_direction_pin_mask(uint8_t axis_idx)
 }
 
 
-// Returns limit pin mask according to Grbl internal axis indexing.
+//根据Grbl内部轴索引返回限制引脚掩码。
 uint8_t get_limit_pin_mask(uint8_t axis_idx)
 {
   if ( axis_idx == X_AXIS ) { return((1<<X_LIMIT_BIT)); }
