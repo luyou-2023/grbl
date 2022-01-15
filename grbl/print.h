@@ -1,5 +1,5 @@
 /*
-  print.h - Functions for formatting output strings
+  print.h - 用于格式化输出字符串的函数
    Grbl的一部分
 
   版权所有 2011-2016 Sungeun K. Jeon for Gnea Research LLC
@@ -24,21 +24,21 @@ void printInteger(long n);
 
 void print_uint32_base10(uint32_t n);
 
-// Prints an uint8 variable in base 10.
+//打印基数为10的uint8变量。
 void print_uint8_base10(uint8_t n);
 
-// Prints an uint8 variable in base 2 with desired number of desired digits.
+//以所需位数打印基数2中的uint8变量。
 void print_uint8_base2_ndigit(uint8_t n, uint8_t digits);
 
 void printFloat(float n, uint8_t decimal_places);
 
-// Floating value printing handlers for special variables types used in Grbl.
-//  - CoordValue: Handles all position or coordinate values in inches or mm reporting.
-//  - RateValue: Handles feed rate and current velocity in inches or mm reporting.
+//Grbl中使用的特殊变量类型的浮点值打印处理程序。
+//-坐标值：以英寸或毫米为单位处理所有位置或坐标值。
+//-RateValue：以英寸或毫米为单位处理进给速度和当前速度报告。
 void printFloat_CoordValue(float n);
 void printFloat_RateValue(float n);
 
-// Debug tool to print free memory in bytes at the called point. Not used otherwise.
+//调试工具，用于在调用点以字节为单位打印可用内存。不用于其他用途。
 void printFreeMemory();
 
 #endif

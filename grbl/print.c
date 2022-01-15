@@ -1,5 +1,5 @@
 /*
-  print.c - Functions for formatting output strings
+  print.c - 用于格式化输出字符串的函数
    Grbl的一部分
 
   版权所有 2011-2016 Sungeun K. Jeon for Gnea Research LLC
@@ -22,7 +22,7 @@ void printString(const char *s)
 }
 
 
-// Print a string stored in PGM-memory
+//打印存储在PGM内存中的字符串
 void printPgmString(const char *s)
 {
   char c;
@@ -53,7 +53,7 @@ void printPgmString(const char *s)
 // }
 
 
-// Prints an uint8 variable in base 10.
+//打印基数为10的uint8变量。
 void print_uint8_base10(uint8_t n)
 {
   uint8_t digit_a = 0;
@@ -72,7 +72,7 @@ void print_uint8_base10(uint8_t n)
 }
 
 
-// Prints an uint8 variable in base 2 with desired number of desired digits.
+//以所需位数打印基数2中的uint8变量。
 void print_uint8_base2_ndigit(uint8_t n, uint8_t digits) {
   unsigned char buf[digits];
   uint8_t i = 0;
@@ -118,11 +118,9 @@ void printInteger(long n)
 }
 
 
-// Convert float to string by immediately converting to a long integer, which contains
-// more digits than a float. Number of decimal places, which are tracked by a counter,
-// may be set by the user. The integer is then efficiently converted to a string.
-// NOTE: AVR '%' and '/' integer operations are very efficient. Bitshifting speed-up
-// techniques are actually just slightly slower. Found this out the hard way.
+//通过立即转换为长整数，将浮点转换为字符串，长整数包含的数字比浮点多。
+//由计数器跟踪的小数位数可由用户设置。然后将整数有效地转换为字符串。
+//注意：AVR“%”和“/”整数操作非常有效。位移加速技术实际上只是稍微慢一点。我是通过艰苦的努力才发现这一点的。
 void printFloat(float n, uint8_t decimal_places)
 {
   if (n < 0) {
@@ -131,40 +129,39 @@ void printFloat(float n, uint8_t decimal_places)
   }
 
   uint8_t decimals = decimal_places;
-  while (decimals >= 2) { // Quickly convert values expected to be E0 to E-4.
+  while (decimals >= 2) { //快速将预期为E0的值转换为E-4。
     n *= 100;
     decimals -= 2;
   }
   if (decimals) { n *= 10; }
-  n += 0.5; // Add rounding factor. Ensures carryover through entire value.
+  n += 0.5; // 添加舍入因子。 确保整个值的进位。
 
-  // Generate digits backwards and store in string.
+  //向后生成数字并以字符串形式存储。
   unsigned char buf[13];
   uint8_t i = 0;
   uint32_t a = (long)n;
   while(a > 0) {
-    buf[i++] = (a % 10) + '0'; // Get digit
+    buf[i++] = (a % 10) + '0'; //获取数字
     a /= 10;
   }
   while (i < decimal_places) {
-     buf[i++] = '0'; // Fill in zeros to decimal point for (n < 1)
+     buf[i++] = '0'; //将零填入小数点（n<1）
   }
-  if (i == decimal_places) { // Fill in leading zero, if needed.
+  if (i == decimal_places) { //如果需要，填写前导零。
     buf[i++] = '0';
   }
 
-  // Print the generated string.
+  //打印生成的字符串。
   for (; i > 0; i--) {
-    if (i == decimal_places) { serial_write('.'); } // Insert decimal point in right place.
+    if (i == decimal_places) { serial_write('.'); } //在正确的位置插入小数点。
     serial_write(buf[i-1]);
   }
 }
 
 
-// Floating value printing handlers for special variables types used in Grbl and are defined
-// in the config.h.
-//  - CoordValue: Handles all position or coordinate values in inches or mm reporting.
-//  - RateValue: Handles feed rate and current velocity in inches or mm reporting.
+//Grbl中使用的特殊变量类型的浮点值打印处理程序，在配置中定义。H
+//-坐标值：以英寸或毫米为单位处理所有位置或坐标值。
+//-RateValue：以英寸或毫米为单位处理进给速度和当前速度报告。
 void printFloat_CoordValue(float n) {
   if (bit_istrue(settings.flags,BITFLAG_REPORT_INCHES)) {
     printFloat(n*INCH_PER_MM,N_DECIMAL_COORDVALUE_INCH);
