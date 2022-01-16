@@ -1,3 +1,5 @@
+# Grbl中文注解版，代码行级注释。
+
 ![GitHub Logo](https://github.com/gnea/gnea-Media/blob/master/Grbl%20Logo/Grbl%20Logo%20250px.png?raw=true)
 
 ***
