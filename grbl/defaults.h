@@ -12,17 +12,15 @@
   您应该已经收到GNU通用公共许可证的副本和Grbl一起。如果没有，请参阅<http://www.gnu.org/licenses/>。
 */
 
-/* The defaults.h file serves as a central default settings selector for different machine
-   types, from DIY CNC mills to CNC conversions of off-the-shelf machines. The settings
-   files listed here are supplied by users, so your results may vary. However, this should
-   give you a good starting point as you get to know your machine and tweak the settings for
-   your nefarious needs.
-   NOTE: Ensure one and only one of these DEFAULTS_XXX values is defined in config.h */
+/* defaults.h文件作为不同机器类型的中央默认设置选择器，从DIY CNC铣床到现成机器的CNC转换。
+  此处列出的设置文件由用户提供，因此您的结果可能会有所不同。
+   然而，这应该给你一个很好的起点，当你开始了解你的机器，调整你的邪恶需要的设置。
+   注意：确保在config.h中定义了一个且仅定义了一个默认值 */
 
 #ifndef defaults_h
 
 #ifdef DEFAULTS_GENERIC
-  // Grbl generic default settings. Should work across different machines.
+//Grbl通用默认设置。应该在不同的机器上工作。
   #define DEFAULT_X_STEPS_PER_MM 250.0
   #define DEFAULT_Y_STEPS_PER_MM 250.0
   #define DEFAULT_Z_STEPS_PER_MM 250.0
@@ -60,8 +58,7 @@
 #endif
 
 #ifdef DEFAULTS_SHERLINE_5400
-  // Description: Sherline 5400 mill with three NEMA 23 Keling  KL23H256-21-8B 185 oz-in stepper motors,
-  // driven by three Pololu A4988 stepper drivers with a 30V, 6A power supply at 1.5A per winding.
+//描述：Sherline 5400磨机，配备三台NEMA 23科林KL23H256-21-8B 185盎司步进电机，由三台Pololu A4988步进电机驱动器驱动，每绕组1.5A，配备30V、6A电源。
   #define MICROSTEPS 2
   #define STEPS_PER_REV 200.0
   #define MM_PER_REV (0.050*MM_PER_INCH) // 0.050 inch/rev leadscrew
@@ -102,7 +99,7 @@
 #endif
 
 #ifdef DEFAULTS_POCKETNC_FR4
-  // Description: Pocket NC FR4 CNC mill.
+//说明：袖珍数控FR4数控铣床。
   #define DEFAULT_X_STEPS_PER_MM 800.0
   #define DEFAULT_Y_STEPS_PER_MM 800.0
   #define DEFAULT_Z_STEPS_PER_MM 800.0
@@ -140,8 +137,7 @@
 #endif
 
 #ifdef DEFAULTS_SHAPEOKO
-  // Description: Shapeoko CNC mill with three NEMA 17 stepper motors, driven by Synthetos
-  // grblShield with a 24V, 4.2A power supply.
+//描述：Shapeoko数控铣床，配备三台NEMA 17步进电机，由Synthetos grblShield驱动，带24V、4.2A电源。
   #define MICROSTEPS_XY 8
   #define STEP_REVS_XY 400
   #define MM_PER_REV_XY (0.08*18*MM_PER_INCH) // 0.08 in belt pitch, 18 pulley teeth
@@ -185,8 +181,7 @@
 #endif
 
 #ifdef DEFAULTS_SHAPEOKO_2
-  // Description: Shapeoko CNC mill with three NEMA 17 stepper motors, driven by Synthetos
-  // grblShield at 28V.
+//描述：Shapeoko数控铣床，配备三台NEMA 17步进电机，由Synthetos grblShield在28V电压下驱动。
   #define MICROSTEPS_XY 8
   #define STEP_REVS_XY 200
   #define MM_PER_REV_XY (2.0*20) // 2mm belt pitch, 20 pulley teeth
@@ -230,7 +225,7 @@
 #endif
 
 #ifdef DEFAULTS_SHAPEOKO_3
-  // Description: Shapeoko CNC mill with three NEMA 23 stepper motors, driven by CarbideMotion
+//描述：Shapeoko数控铣床，配备三台NEMA 23步进电机，由CarbideMotion驱动
   #define MICROSTEPS_XY 8
   #define STEP_REVS_XY 200
   #define MM_PER_REV_XY (2.0*20) // 2mm belt pitch, 20 pulley teeth
@@ -274,8 +269,7 @@
 #endif
 
 #ifdef DEFAULTS_X_CARVE_500MM
-  // Description: X-Carve 3D Carver CNC mill with three 200 step/rev motors driven by Synthetos
-  // grblShield at 24V.
+//描述：X-Carve 3D Carver数控铣床，配有三个200步/转的电机，由Synthetos grblShield在24V下驱动。
   #define MICROSTEPS_XY 8
   #define STEP_REVS_XY 200
   #define MM_PER_REV_XY (2.0*20) // 2mm belt pitch, 20 pulley teeth
@@ -319,8 +313,7 @@
 #endif
 
 #ifdef DEFAULTS_X_CARVE_1000MM
-  // Description: X-Carve 3D Carver CNC mill with three 200 step/rev motors driven by Synthetos
-  // grblShield at 24V.
+//描述：X-Carve 3D Carver数控铣床，配有三个200步/转的电机，由Synthetos grblShield在24V下驱动。
   #define MICROSTEPS_XY 8
   #define STEP_REVS_XY 200
   #define MM_PER_REV_XY (2.0*20) // 2mm belt pitch, 20 pulley teeth
@@ -364,8 +357,8 @@
 #endif
 
 #ifdef DEFAULTS_BOBSCNC_E3
-  // Grbl settings for Bob's CNC E3 Machine
-  // https://www.bobscnc.com/products/e3-cnc-engraving-kit
+//Bob数控E3机床的Grbl设置
+// https://www.bobscnc.com/products/e3-cnc-engraving-kit
   #define DEFAULT_X_STEPS_PER_MM 80.0
   #define DEFAULT_Y_STEPS_PER_MM 80.0
   #define DEFAULT_Z_STEPS_PER_MM 2267.717
@@ -403,8 +396,8 @@
 #endif
 
 #ifdef DEFAULTS_BOBSCNC_E4
-  // Grbl settings for Bob's CNC E4 Machine
-  // https://www.bobscnc.com/products/e4-cnc-router
+//Bob CNC E4机器的Grbl设置
+// https://www.bobscnc.com/products/e4-cnc-router
   #define DEFAULT_X_STEPS_PER_MM 80.0
   #define DEFAULT_Y_STEPS_PER_MM 80.0
   #define DEFAULT_Z_STEPS_PER_MM 2267.717
@@ -442,9 +435,9 @@
 #endif
 
 #ifdef DEFAULTS_ZEN_TOOLWORKS_7x7
-  // Description: Zen Toolworks 7x7 mill with three Shinano SST43D2121 65oz-in NEMA 17 stepper motors.
-  // Leadscrew is different from some ZTW kits, where most are 1.25mm/rev rather than 8.0mm/rev here.
-  // Driven by 30V, 6A power supply and TI DRV8811 stepper motor drivers.
+//描述：Zen Toolworks 7x7磨机，配备三个Shinano SST43D2121 65oz NEMA 17步进电机。
+//丝杠不同于一些ZTW套件，其中大多数为1.25mm/rev，而不是8.0mm/rev。
+//由30V、6A电源和TI DRV8811步进电机驱动器驱动。
   #define MICROSTEPS 8
   #define STEPS_PER_REV 200.0
   #define MM_PER_REV 8.0 // 8 mm/rev leadscrew
@@ -485,8 +478,8 @@
 #endif
 
 #ifdef DEFAULTS_OXCNC
-  // Grbl settings for OpenBuilds OX CNC Machine
-  // http://www.openbuilds.com/builds/openbuilds-ox-cnc-machine.341/
+//OpenOX数控机床的Grbl设置
+// http://www.openbuilds.com/builds/openbuilds-ox-cnc-machine.341/
   #define DEFAULT_X_STEPS_PER_MM 26.670
   #define DEFAULT_Y_STEPS_PER_MM 26.670
   #define DEFAULT_Z_STEPS_PER_MM 50
@@ -524,8 +517,8 @@
 #endif
 
 #ifdef DEFAULTS_SIMULATOR
-  // Settings only for Grbl Simulator (www.github.com/grbl/grbl-sim)
-  // Grbl generic default settings. Should work across different machines.
+//仅适用于Grbl模拟器的设置（www.github.com/Grbl/Grbl-sim）
+//Grbl通用默认设置。应该在不同的机器上工作。
   #define DEFAULT_X_STEPS_PER_MM 1000.0
   #define DEFAULT_Y_STEPS_PER_MM 1000.0
   #define DEFAULT_Z_STEPS_PER_MM 1000.0
