@@ -11,8 +11,8 @@ Grbl是性能高，成本低，基于并口运动控制，用于CNC雕刻。这�
 * 更多信息或帮助, 查看我们的WiKi **[WiKi页面!](https://github.com/MillerRen/grbl/wiki)** 如果上面的信息过时了, 请编辑它保持最新并和我们沟通! 谢谢!
 
 ## 支持及赞助
-如果您想支持我的工作，可以参与贡献或打赏支持。您可以选择出现或不出现在赞助列表。
-<br>
-<img src="./images/alipay.jpg" width="50%" style="float:left">
-<img src="./images/wechatpay.jpg" width="50%" style="float:left">
+<img src="./images/donate.png">   
+
+## CNC技术讨论
+<img src="./images/cncnc.png">
 
