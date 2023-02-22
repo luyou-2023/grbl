@@ -44,7 +44,7 @@
 //定义步进驱动器启用/禁用输出引脚。
   #define STEPPERS_DISABLE_DDR    DDRB
   #define STEPPERS_DISABLE_PORT   PORTB
-  #define STEPPERS_DISABLE_BIT    0一个数字管脚8
+  #define STEPPERS_DISABLE_BIT    0 // 一个数字管脚8
   #define STEPPERS_DISABLE_MASK   (1<<STEPPERS_DISABLE_BIT)
 
 //定义归位/硬限位开关输入引脚和限位中断向量。

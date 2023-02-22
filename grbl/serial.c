@@ -114,7 +114,7 @@ ISR(SERIAL_UDRE)
 
   serial_tx_buffer_tail = tail;
 
-  // 如果环形队列为空，关闭数据寄存器为空中断阻止继续接收串口流
+  // 如果环形队列为空，关闭串口数据寄存器为空的中断，阻止继续发送串口流
   if (tail == serial_tx_buffer_head) { UCSR0B &= ~(1 << UDRIE0); }
 }
 
