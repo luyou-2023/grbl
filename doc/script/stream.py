@@ -1,24 +1,21 @@
 #!/usr/bin/env python
 """\
 
-Stream g-code to grbl controller
+grbl控制器的G代码流
 
-This script differs from the simple_stream.py script by 
-tracking the number of characters in grbl's serial read
-buffer. This allows grbl to fetch the next line directly
-from the serial buffer and does not have to wait for a 
-response from the computer. This effectively adds another
-buffer layer to prevent buffer starvation.
+这个脚本和simple_stream.py脚本的不同点在于：它追踪grbl串口读缓冲区
+中字符数。这允许grbl从串口缓冲区直接拉取下一行并且不需要从上位机等待响应。
+这有效地增加了另一个缓冲层，以防止缓冲空闲。
 
-CHANGELOG:
-- 20170531: Status report feedback at 1.0 second intervals.
-    Configurable baudrate and report intervals. Bug fixes.
-- 20161212: Added push message feedback for simple streaming
-- 20140714: Updated baud rate to 115200. Added a settings
-  write mode via simple streaming method. MIT-licensed.
+改动:
+- 20170531: 1.0秒间隔的状态报告反馈。
+    可配置的波特率和报告间隔。缺陷修复。
+- 20161212: 为简单流添加了推送消息反馈
+- 20140714: 更新波特率到115200，添加了设置。
+  通过简单的流式传输方法实现写入模式。 MIT授权.
 
-TODO: 
-- Add realtime control commands during streaming.
+代办: 
+- 添加在流期间的实时控制命令。
 
 ---------------------
 The MIT License (MIT)
@@ -55,11 +52,11 @@ import threading
 RX_BUFFER_SIZE = 128
 BAUD_RATE = 115200
 ENABLE_STATUS_REPORTS = True
-REPORT_INTERVAL = 1.0 # seconds
+REPORT_INTERVAL = 1.0 # 单位为秒
 
-is_run = True # Controls query timer
+is_run = True # 控制查询计时器
 
-# Define command line argument interface
+# 定义命令行参数接口
 parser = argparse.ArgumentParser(description='Stream g-code file to grbl. (pySerial and argparse libraries required)')
 parser.add_argument('gcode_file', type=argparse.FileType('r'),
         help='g-code filename to be streamed')
@@ -73,7 +70,7 @@ parser.add_argument('-c','--check',action='store_true', default=False,
         help='stream in check mode')
 args = parser.parse_args()
 
-# Periodic timer to query for status reports
+# 用于状态报告的周期性定时器。
 # TODO: Need to track down why this doesn't restart consistently before a release.
 def send_status_query():
     s.write('?')
@@ -84,7 +81,7 @@ def periodic_timer() :
       time.sleep(REPORT_INTERVAL)
   
 
-# Initialize
+# 初始化
 s = serial.Serial(args.device_file,BAUD_RATE)
 f = args.gcode_file
 verbose = True
@@ -94,11 +91,11 @@ if args.settings : settings_mode = True
 check_mode = False
 if args.check : check_mode = True
 
-# Wake up grbl
+# 唤醒grbl
 print "Initializing Grbl..."
 s.write("\r\n\r\n")
 
-# Wait for grbl to initialize and flush startup text in serial input
+# 等待grbl初始化并刷新串口启动文本
 time.sleep(2)
 s.flushInput()
 
@@ -106,7 +103,7 @@ if check_mode :
     print "Enabling Grbl Check-Mode: SND: [$C]",
     s.write("$C\n")
     while 1:
-        grbl_out = s.readline().strip() # Wait for grbl response with carriage return
+        grbl_out = s.readline().strip() # 等待grbl返回回车。
         if grbl_out.find('error') >= 0 :
             print "REC:",grbl_out
             print "  Failed to set Grbl check-mode. Aborting..."
@@ -117,27 +114,27 @@ if check_mode :
 
 start_time = time.time();
 
-# Start status report periodic timer
+# 启动状态报告查询定时器
 if ENABLE_STATUS_REPORTS :
     timerThread = threading.Thread(target=periodic_timer)
     timerThread.daemon = True
     timerThread.start()
 
-# Stream g-code to grbl
+# grbl的G代码流
 l_count = 0
 error_count = 0
 if settings_mode:
-    # Send settings file via simple call-response streaming method. Settings must be streamed
-    # in this manner since the EEPROM accessing cycles shut-off the serial interrupt.
+    # 通关简单的请求-响应流方法发送配置文件。 
+    # 由于EEPROM访问期间会关闭串口中断，所以配置必须以这种方式进行流式传输。
     print "SETTINGS MODE: Streaming", args.gcode_file.name, " to ", args.device_file
     for line in f:
-        l_count += 1 # Iterate line counter    
+        l_count += 1 # 迭代行计数器   
         # l_block = re.sub('\s|\(.*?\)','',line).upper() # Strip comments/spaces/new line and capitalize
-        l_block = line.strip() # Strip all EOL characters for consistency
+        l_block = line.strip() # 去掉EOL字符以保证一致性。
         if verbose: print "SND>"+str(l_count)+": \"" + l_block + "\""
-        s.write(l_block + '\n') # Send g-code block to grbl
+        s.write(l_block + '\n') # 发送G代码块给grbl
         while 1:
-            grbl_out = s.readline().strip() # Wait for grbl response with carriage return
+            grbl_out = s.readline().strip() # 等待grbl返回回车。
             if grbl_out.find('ok') >= 0 :
                 if verbose: print "  REC<"+str(l_count)+": \""+grbl_out+"\""
                 break
@@ -148,42 +145,41 @@ if settings_mode:
             else:
                 print "    MSG: \""+grbl_out+"\""
 else:    
-    # Send g-code program via a more agressive streaming protocol that forces characters into
-    # Grbl's serial read buffer to ensure Grbl has immediate access to the next g-code command
-    # rather than wait for the call-response serial protocol to finish. This is done by careful
-    # counting of the number of characters sent by the streamer to Grbl and tracking Grbl's 
-    # responses, such that we never overflow Grbl's serial read buffer. 
+    # 通过改进的流协议发送g代码程序，该协议强制字符进入Grbl的串行读取缓冲区，
+    # 以确保Grbl能够立即访问下一个g代码命令，而不是等待调用响应串行协议完成。 
+    # 这是通过仔细计算流发送到Grbl的字符数并跟踪Grbl响应来完成的，
+    # 这样我们就不会溢出Grbl串行读取缓冲区。 
     g_count = 0
     c_line = []
     for line in f:
         l_count += 1 # Iterate line counter
-        l_block = re.sub('\s|\(.*?\)','',line).upper() # Strip comments/spaces/new line and capitalize
+        l_block = re.sub('\s|\(.*?\)','',line).upper() # 移除注释空行换行并大写
         # l_block = line.strip()
-        c_line.append(len(l_block)+1) # Track number of characters in grbl serial read buffer
+        c_line.append(len(l_block)+1) # 跟踪grbl串口读缓冲区的字符数
         grbl_out = '' 
         while sum(c_line) >= RX_BUFFER_SIZE-1 | s.inWaiting() :
-            out_temp = s.readline().strip() # Wait for grbl response
+            out_temp = s.readline().strip() # 等待响应
             if out_temp.find('ok') < 0 and out_temp.find('error') < 0 :
-                print "    MSG: \""+out_temp+"\"" # Debug response
+                print "    MSG: \""+out_temp+"\"" # 调试响应
             else :
                 if out_temp.find('error') >= 0 : error_count += 1
-                g_count += 1 # Iterate g-code counter
+                g_count += 1 # 迭代G代码计数器
                 if verbose: print "  REC<"+str(g_count)+": \""+out_temp+"\""
-                del c_line[0] # Delete the block character count corresponding to the last 'ok'
-        s.write(l_block + '\n') # Send g-code block to grbl
+                del c_line[0] # 删除与最后一个“ok”对应的块字符计数
+        s.write(l_block + '\n') # 发送G代码块到grbl
         if verbose: print "SND>"+str(l_count)+": \"" + l_block + "\""
-    # Wait until all responses have been received.
+    # 等待直到所有响应都被接收了。
     while l_count > g_count :
-        out_temp = s.readline().strip() # Wait for grbl response
+        out_temp = s.readline().strip() # 等待grbl响应
         if out_temp.find('ok') < 0 and out_temp.find('error') < 0 :
-            print "    MSG: \""+out_temp+"\"" # Debug response
+            print "    MSG: \""+out_temp+"\"" # 调试响应
         else :
             if out_temp.find('error') >= 0 : error_count += 1
-            g_count += 1 # Iterate g-code counter
-            del c_line[0] # Delete the block character count corresponding to the last 'ok'
+            g_count += 1 # 迭代G代码计数器
+            del c_line[0] # 删除最有一个"ok"对应的字符计数
             if verbose: print "  REC<"+str(g_count)+": \""+out_temp + "\""
 
-# Wait for user input after streaming is completed
+# 流完成后等待用户输入
 print "\nG-code streaming finished!"
 end_time = time.time();
 is_run = False;
@@ -197,6 +193,6 @@ else :
    print "WARNING: Wait until Grbl completes buffered g-code blocks before exiting."
    raw_input("  Press <Enter> to exit and disable Grbl.") 
 
-# Close file and serial port
+# 关闭文件和串口端口
 f.close()
 s.close()
