@@ -1,15 +1,11 @@
 #!/usr/bin/env python
 """\
-Simple g-code streaming script for grbl
+grbl的简单G代码流脚本
 
-Provided as an illustration of the basic communication interface
-for grbl. When grbl has finished parsing the g-code block, it will
-return an 'ok' or 'error' response. When the planner buffer is full,
-grbl will not send a response until the planner buffer clears space.
+作为grbl基本通信接口的示例。当grbl完成了解析G代码块后，将会返回'ok'或'error'。
+当规划器缓冲区满了时，grbl将不会发送返回信息知道规划器缓冲区腾出空间。
 
-G02/03 arcs are special exceptions, where they inject short line 
-segments directly into the planner. So there may not be a response 
-from grbl for the duration of the arc.
+G02/03 圆弧指令是个例外，它们直接注入短线段到规划器。因此在圆弧期间可能没有返回。
 
 ---------------------
 The MIT License (MIT)
@@ -39,28 +35,28 @@ THE SOFTWARE.
 import serial
 import time
 
-# Open grbl serial port
+# 打开grbl串口端口
 s = serial.Serial('/dev/tty.usbmodem1811',115200)
 
-# Open g-code file
+# 代开G代码文件
 f = open('grbl.gcode','r');
 
-# Wake up grbl
+# 唤醒grbl
 s.write("\r\n\r\n")
-time.sleep(2)   # Wait for grbl to initialize 
-s.flushInput()  # Flush startup text in serial input
+time.sleep(2)   # 等待grbl初始化
+s.flushInput()  # 刷新串行端口的启动文本
 
-# Stream g-code to grbl
+# G代码流给grbl
 for line in f:
-    l = line.strip() # Strip all EOL characters for consistency
+    l = line.strip() # 去除所有EOL字符以保证一致性
     print 'Sending: ' + l,
-    s.write(l + '\n') # Send g-code block to grbl
-    grbl_out = s.readline() # Wait for grbl response with carriage return
+    s.write(l + '\n') # 发送G代码块给grbl
+    grbl_out = s.readline() # 等待grbl回车响应
     print ' : ' + grbl_out.strip()
 
-# Wait here until grbl is finished to close serial port and file.
+# 等待直到grbl完成，关闭串口端口和文件
 raw_input("  Press <Enter> to exit and disable grbl.") 
 
-# Close file and serial port
+# 关闭文件和串口端口
 f.close()
 s.close()    
