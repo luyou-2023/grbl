@@ -44,7 +44,7 @@ void protocol_main_loop()
   // 注意： 睡眠模式禁用步进驱动器并且位置不能保持。步进驱动器的EN引脚释放，不能保持力矩。
   // 将睡眠状态重新初始化为警报模式确保让用户归位或让用户知道。
   if (sys.state & (STATE_ALARM | STATE_SLEEP)) { // 如果系统处于STATE_ALARM或STATE_SLEEP状态
-    report_feedback_message(MESSAGE_ALARM_LOCK); // 报告警报锁定小小
+    report_feedback_message(MESSAGE_ALARM_LOCK); // 报告警报锁定消息
     sys.state = STATE_ALARM; // 确保警报状态被设置
   } else {
     // 检查安全门是否打开

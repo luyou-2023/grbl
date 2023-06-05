@@ -344,7 +344,7 @@ void mc_reset()
   if (bit_isfalse(sys_rt_exec_state, EXEC_RESET)) {
     system_set_exec_state_flag(EXEC_RESET);
 
-    //杀死主轴和冷却液。
+    //停止主轴和冷却液。
     spindle_stop();
     coolant_stop();
 

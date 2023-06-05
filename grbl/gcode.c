@@ -120,11 +120,10 @@ uint8_t gc_execute_line(char *line)
     //这应该是一个足够好的妥协，可以捕获大多数非整数误差。    
     //为了使其兼容，我们只需要将尾数更改为int16，但这会增加编译的闪存空间。
     //也许以后再更新。
-    int_value = trunc(value);
+    int_value = trunc(value); // 提取数值的整数部分
     mantissa =  round(100*(value - int_value)); //计算Gxx.x命令的尾数。
     
     //注意：舍入必须用于捕捉小的浮点误差。
-
     //检查g代码字是否受支持，是否因模式组冲突而出现错误，是否在g代码块中重复出现。
     //如果可以，则更新命令或记录其值。
     switch(letter) {
@@ -818,7 +817,7 @@ uint8_t gc_execute_line(char *line)
   //初始化运动块的规划器数据结构。
   plan_line_data_t plan_data;
   plan_line_data_t *pl_data = &plan_data;
-  memset(pl_data,0,sizeof(plan_line_data_t)); //零pl_data结构
+  memset(pl_data,0,sizeof(plan_line_data_t)); //重置pl_data结构
 
   //截取jog命令并完成有效jog命令的错误检查，然后执行。
   
