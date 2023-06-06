@@ -76,30 +76,30 @@
 //全局持久设置（从字节EEPROM_ADDR_GLOBAL开始存储）
 typedef struct {
   //轴设置
-  float steps_per_mm[N_AXIS];
-  float max_rate[N_AXIS];
-  float acceleration[N_AXIS];
-  float max_travel[N_AXIS];
+  float steps_per_mm[N_AXIS]; // 每毫米步数
+  float max_rate[N_AXIS];  // 最大速度
+  float acceleration[N_AXIS]; // 加速度
+  float max_travel[N_AXIS]; // 最大行进距离
 
   //剩余Grbl设置
-  uint8_t pulse_microseconds;
-  uint8_t step_invert_mask;
-  uint8_t dir_invert_mask;
+  uint8_t pulse_microseconds; // 步进电机脉冲宽度（微秒）
+  uint8_t step_invert_mask; // 步进位反转掩码
+  uint8_t dir_invert_mask;  // 步进方向位反转掩码
   uint8_t stepper_idle_lock_time; //如果最大值为255，则步进器不禁用。
   uint8_t status_report_mask; //用于指示所需报告数据的掩码。
-  float junction_deviation;
-  float arc_tolerance;
+  float junction_deviation; // 结点偏差
+  float arc_tolerance; // 弧公差
 
-  float rpm_max;
-  float rpm_min;
+  float rpm_max; // 最大转速
+  float rpm_min; // 最小转速
 
   uint8_t flags;  //包含默认的布尔设置
 
-  uint8_t homing_dir_mask;
-  float homing_feed_rate;
-  float homing_seek_rate;
-  uint16_t homing_debounce_delay;
-  float homing_pulloff;
+  uint8_t homing_dir_mask; // 归位方向掩码
+  float homing_feed_rate; // 归位进给率，慢速移动
+  float homing_seek_rate; // 归位查找进给率，快速移动
+  uint16_t homing_debounce_delay; // 归位抖动延迟
+  float homing_pulloff; // 归位回拉距离
 } settings_t;
 extern settings_t settings;
 

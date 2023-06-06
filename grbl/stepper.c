@@ -290,20 +290,20 @@ ISR(TIMER1_COMPA_vect)
     DIRECTION_PORT_DUAL = (DIRECTION_PORT_DUAL & ~DIRECTION_MASK_DUAL) | (st.dir_outbits_dual & DIRECTION_MASK_DUAL);
   #endif
 
-  // Then pulse the stepping pins
-  #ifdef STEP_PULSE_DELAY
+  // 然后设置步进脉冲
+  #ifdef STEP_PULSE_DELAY // 延迟操作
     st.step_bits = (STEP_PORT & ~STEP_MASK) | st.step_outbits; //存储_位以防止覆盖。
     #ifdef ENABLE_DUAL_AXIS
       st.step_bits_dual = (STEP_PORT_DUAL & ~STEP_MASK_DUAL) | st.step_outbits_dual;
     #endif
-  #else  // Normal operation
+  #else  // 常规操作
     STEP_PORT = (STEP_PORT & ~STEP_MASK) | st.step_outbits;
     #ifdef ENABLE_DUAL_AXIS
       STEP_PORT_DUAL = (STEP_PORT_DUAL & ~STEP_MASK_DUAL) | st.step_outbits_dual;
     #endif
   #endif
 
-  //启用步进脉冲重置定时器，以便步进器端口重置中断能够在准确settings.pulse.microseconds微秒后重置信号，与主定时器1预分频器无关。
+  //启用步进脉冲重置定时器0，以便步进器端口重置中断能够在准确settings.pulse.microseconds微秒后重置信号，与主定时器1预分频器无关。
   TCNT0 = st.step_pulse_time; //重新加载计时器0计数器
   TCCR0B = (1<<CS01); //开始计时0。全速，1/8预分频器
 
