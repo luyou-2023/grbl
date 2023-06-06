@@ -234,7 +234,7 @@ void st_go_idle()
 {
   //禁用步进驱动程序中断。如果激活，允许步进器端口重置中断完成。
   TIMSK1 &= ~(1<<OCIE1A); //禁用定时器1中断
-  TCCR1B = (TCCR1B & ~((1<<CS12) | (1<<CS11))) | (1<<CS10); //将时钟重置为无预刻度。
+  TCCR1B = (TCCR1B & ~((1<<CS12) | (1<<CS11))) | (1<<CS10); //将时钟重置为无预分频(分频数为1)。
   busy = false;
 
   //根据设置和环境，设置步进驱动程序空闲状态、禁用或启用。
@@ -280,7 +280,7 @@ void st_go_idle()
 // TODO:以某种方式替换ISR中int32位置计数器的直接更新。 
 //可能使用较小的int8变量，并仅在段完成时更新位置计数器。
 //由于探测和寻的周期需要真正的实时位置，这可能会变得复杂。
-ISR(TIMER1_COMPA_vect)
+ISR(TIMER1_COMPA_vect) // CTC和COMPA中断可以产生精确的定时
 {
   if (busy) { return; } //忙标志用于避免重新进入该中断
 
@@ -531,7 +531,7 @@ void stepper_init()
     DIRECTION_DDR_DUAL |= DIRECTION_MASK_DUAL;
   #endif
 
-  //配置定时器1：步进驱动程序中断
+  //配置定时器1：步进驱动程序中断 WGM13=0 WGM12=1 WGM11=0 WGM10=0
   TCCR1B &= ~(1<<WGM13); // waveform generation = 0100 = CTC
   TCCR1B |=  (1<<WGM12);
   TCCR1A &= ~((1<<WGM11) | (1<<WGM10));
