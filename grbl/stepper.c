@@ -220,7 +220,7 @@ void st_wake_up()
     //设置方向引脚写入和步进命令之间的延迟。
     OCR0A = -(((settings.pulse_microseconds)*TICKS_PER_MICROSECOND) >> 3);
   #else // Normal operation
-    // 设置步进脉冲时间。 从振荡器进行特别计算。 使用二的补？。
+    // 设置步进脉冲时间。 从振荡器进行特别计算。 减去2可能是为了防止PWM100%会一直输出高电平。
     // 这里右移3位相当于除以8，是因为定时器0时钟从振荡器8分频获得。
     st.step_pulse_time = -(((settings.pulse_microseconds-2)*TICKS_PER_MICROSECOND) >> 3);
   #endif
