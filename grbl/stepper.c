@@ -221,6 +221,7 @@ void st_wake_up()
     OCR0A = -(((settings.pulse_microseconds)*TICKS_PER_MICROSECOND) >> 3);
   #else // Normal operation
     // 设置步进脉冲时间。 从振荡器进行特别计算。 使用二的补？。
+    // 这里右移3位相当于乘以8，是因为定时器时钟从CPU时钟8分频获得。
     st.step_pulse_time = -(((settings.pulse_microseconds-2)*TICKS_PER_MICROSECOND) >> 3);
   #endif
 
