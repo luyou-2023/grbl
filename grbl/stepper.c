@@ -224,7 +224,7 @@ void st_wake_up()
     st.step_pulse_time = -(((settings.pulse_microseconds-2)*TICKS_PER_MICROSECOND) >> 3);
   #endif
 
-  //启用步进驱动程序中断
+  //启用步进驱动程序中断,启用后会很快进入中断
   TIMSK1 |= (1<<OCIE1A);
 }
 
@@ -323,7 +323,7 @@ ISR(TIMER1_COMPA_vect) // CTC和COMPA中断可以产生精确的定时
         TCCR1B = (TCCR1B & ~(0x07<<CS10)) | (st.exec_segment->prescaler<<CS10);
       #endif
 
-      //初始化每个步骤的步骤段计时，并加载要执行的步骤数。
+      //初始化每个步骤的步骤段计时，并加载要执行的步骤数。改变PWM频率。
       OCR1A = st.exec_segment->cycles_per_tick;
       st.step_count = st.exec_segment->n_step; //注意：缓慢移动时，有时可能为零。
 //如果新段启动了新的规划器块，则初始化步进器变量和计数器。

@@ -116,7 +116,7 @@ uint8_t limits_get_state()
       }
     }
   }
-#else //可选：软件去盎司限制引脚例行程序。
+#else //可选：限位引脚的软件去抖动程序。
 //在限制引脚改变时，启用看门狗定时器以创建短延迟。
   ISR(LIMIT_INT_vect) { if (!(WDTCSR & (1<<WDIE))) { WDTCSR |= (1<<WDIE); } }
   ISR(WDT_vect) //看门狗定时器
