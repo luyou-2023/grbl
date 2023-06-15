@@ -338,6 +338,8 @@ uint8_t system_check_travel_limits(float *target)
   return(false);
 }
 
+// 注意：以下函数都是原子操作，因为这些函数会在很多地方调用，尤其是在中断里
+// 这往往会因为多个操作导致变量赋值紊乱，操作前禁用中断，操作后马上恢复。
 
 //用于设置和清除Grbl实时执行标志的特殊处理程序。
 void system_set_exec_state_flag(uint8_t mask) {
